@@ -4,7 +4,7 @@
 #    docker build -f infra/docker/backend.Dockerfile -t backend .
 #  В рантайме: Debian slim + curl (для healthcheck) + non-root user.
 # ═══════════════════════════════════════════════════════════════════
-FROM mcr.microsoft.com/dotnet/sdk:net8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Копируем только то, что нужно для restore (улучшает кэширование слоёв)
@@ -15,7 +15,7 @@ RUN dotnet restore Backend.sln
 RUN dotnet publish Api/Api.csproj -c Release -o /out --no-restore -p:UseAppHost=false
 
 # ── Рантайм ─────────────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/aspnet:net8.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 # curl нужен для healthcheck в docker-compose
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \

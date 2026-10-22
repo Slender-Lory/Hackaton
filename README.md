@@ -1,6 +1,6 @@
 # Тестовое приложение (шаблон)
 
-Веб-приложение: **.NET 8 API + React (Vite) + PostgreSQL**, всё в Docker, с CI и скриптами деплоя.
+Веб-приложение: **.NET 10 API + React (Vite) + PostgreSQL**, всё в Docker, с CI и скриптами деплоя.
 
 ## Как запустить — по шагам
 
@@ -92,7 +92,7 @@ Browser (React/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 
 - **Frontend** собирается Vite, отдаётся nginx'ом (SPA fallback → `index.html`, кэш ассетов).
 - **Прокси `/api`**: dev — Vite (`vite.config.ts`), prod — nginx (`infra/nginx/nginx.conf`); префикс `/api` снимается, backend получает запросы как `/health`, `/api/v1/...`.
-- **Backend** — minimal API .NET 8: `/health` (liveness), `/ready` (readiness), `/api/v1/info`, Swagger в dev.
+- **Backend** — minimal API .NET 10: `/health` (liveness), `/ready` (readiness), `/api/v1/info`, Swagger в dev.
 - **CORS** — из `CORS_ORIGIN` (список через запятую), в docker — http://localhost:5173.
 - **БД** — PostgreSQL, инициализация SQL'ем из `infra/db/init/` при создании volume.
 
@@ -100,7 +100,7 @@ Browser (React/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 
 ## API
 
-Backend (minimal API .NET 8). В dev Swagger UI: http://localhost:8080/swagger
+Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 
 | Метод | Путь | Назначение | Ответ |
 |---|---|---|---|
