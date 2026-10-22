@@ -16,7 +16,7 @@ node_modules/
 dist/
 build/
 .vite/
-.vite-test/
+.vite-test
 .vite-*/
 coverage/
 *.tsbuildinfo
