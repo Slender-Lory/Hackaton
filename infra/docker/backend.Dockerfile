@@ -21,13 +21,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Запуск от непривилегированного пользователя
-RUN addgroup --system app && adduser --system --ingroup app app
-
 WORKDIR /app
 COPY --from=build /out ./
 RUN chown -R app:app /app
 
+# Запуск от непривилегированного пользователя
 USER app
+
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Api.dll"]
