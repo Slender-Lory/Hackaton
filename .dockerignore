@@ -1,0 +1,36 @@
+# Docker build context = корень репозитория.
+# Всё перечисленное ниже не попадает в образы (и ускоряет сборку).
+
+# VCS
+**/.git
+**/.github
+
+# Окружения и секреты
+**/.env
+**/.env.*
+!.env.example
+
+# Node / frontend
+**/node_modules
+**/dist
+**/.vite
+**/coverage
+**/*.tsbuildinfo
+**/.vite-test
+
+# .NET
+**/bin
+**/obj
+
+# IDE / ОС
+.idea
+.vscode
+*.user
+.DS_Store
+
+# Прочее (не нужно в образах)
+docs
+scripts
+Makefile
+*.md
+.editorconfig

@@ -1,0 +1,124 @@
+# ======================================================
+# Окружения и секреты
+# ======================================================
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+secrets.json
+
+# ======================================================
+# Node / Frontend (React + Vite + Vitest)
+# ======================================================
+node_modules/
+dist/
+build/
+.vite/
+.vite-test/
+.vite-*/
+coverage/
+*.tsbuildinfo
+
+# Пакетные менеджеры
+.pnpm-store/
+.yarn/cache/
+.yarn/install-state.gz
+.yarn/plugins/
+.pnp
+.pnp.js
+
+# Логи Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Кэш тулинга
+.eslintcache
+.stylelintcache
+.cache/
+
+# ======================================================
+# .NET / C# (Backend)
+# ======================================================
+**/bin/
+**/obj/
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+
+# Тесты и покрытие
+**/TestResults/
+**/[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+# Публикация и пакеты
+**/publish/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ReSharper / Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Публикация (MSBuild)
+*.publishsettings
+*.pubxml
+*.azurePubxml
+publish/
+
+# ======================================================
+# IDE / Редакторы
+# ======================================================
+.idea/
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ======================================================
+# ОС
+# ======================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ======================================================
+# Логи
+# ======================================================
+*.log
+logs/
+
+# ======================================================
+# Docker / инфраструктура
+# ======================================================
+pgdata/
+*.pid
+*.seed
+
+# ======================================================
+# Прочее
+# ======================================================
+*.orig
+*.rej
