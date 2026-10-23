@@ -77,12 +77,28 @@ make down
 ## Разработка без Docker
 
 ```bash
-# Backend (порт 8080, Swagger на /swagger)
+# БД — в Docker
+docker compose up -d db
+
+# Backend (порт 8080, Swagger на /swagger, тестовое меню на /test/)
 cd backend && dotnet run --project Api
 
 # Frontend (порт 5173) — запросы /api автоматически уходят на localhost:8080
 cd frontend && npm install && npm run dev
 ```
+
+Миграции БД применяются автоматически при старте backend (`Database__MigrateOnStartup=false` — отключить).
+
+## Тестовое меню
+
+В Development backend отдаёт две страницы для проверки API без фронтенда:
+
+- http://localhost:8080/test/ — **гость**: регистрация/вход по никнейму и «вы вошли как …»;
+- http://localhost:8080/test/admin.html — **администратор**: сводка, список всех игроков с поиском,
+  карточка игрока с прогрессом и State. Логин/пароль — `ADMIN_LOGIN` / `ADMIN_PASSWORD`
+  (в Development по умолчанию `admin` / `admin12345`).
+
+Сохранять прогресс игрока можно через Swagger (`PUT /api/v1/players/me/progress/vet`).
 
 ## Архитектура
 
@@ -105,20 +121,73 @@ Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 | Метод | Путь | Назначение | Ответ |
 |---|---|---|---|
 | GET | `/health` | liveness (healthcheck'и compose) | `{ status: "ok", service }` |
-| GET | `/ready` | readiness; при `REQUIRE_DATABASE_URL=1` проверяет наличие `DATABASE_URL` | `{ status: "ready" }` или 503 |
+| GET | `/ready` | readiness: доступность БД; при `REQUIRE_DATABASE_URL=1` — ещё и наличие `DATABASE_URL` | `{ status: "ready" }` или 503 |
 | GET | `/api/v1/info` | имя, версия, окружение | `{ name, version, environment, date }` |
+| POST | `/api/v1/players/enter` | вход по никнейму (см. ниже) | `{ player, isNew, guestToken }` |
+| GET | `/api/v1/players/me` 🔒 | профиль + прогресс по всем профессиям | `{ player, progress[] }` |
+| GET | `/api/v1/players/me/progress/{professionCode}` 🔒 | прогресс по профессии (`revision: 0` — не начата) | `ProgressModel` |
+| PUT | `/api/v1/players/me/progress/{professionCode}` 🔒 | сохранить `{ level, percent, difficulty, state, expectedRevision }` | `ProgressModel` |
+
+| POST | `/api/v1/admin/login` | вход администратора `{ login, password }` (10 попыток в минуту) | `{ token, expiresAt, login }` |
+| GET | `/api/v1/admin/players?search=&offset=&count=` 👑 | все игроки с кратким прогрессом | `{ items, total, offset, count }` |
+| GET | `/api/v1/admin/players/{id}` 👑 | карточка игрока: прогресс со State | `AdminPlayerDetailsModel` |
+| GET | `/api/v1/admin/stats` 👑 | всего игроков, новых/активных за сутки, прогресс по профессиям | `AdminStatsModel` |
+
+🔒 — нужен заголовок `Authorization: Guest <guestToken>`.
+👑 — нужен заголовок `Authorization: Bearer <token администратора>` (JWT с ролью `admin`, живёт 12 часов).
+Токены не взаимозаменяемы: гостевой не открывает админку, админский — эндпоинты игрока.
 
 Соглашения:
 
 - JSON: camelCase, регистронезависимый парсинг.
-- Ошибки API — HTTP-статусы; фронт получает их как `ApiError` (`client.ts`) с полями `status`, `url`, `body`.
+- Ответы контроллеров — `{ result, error }`. Ошибка: `error: { code, message }`, где `code` — 8-значный код из
+  `AppErrorCodes` (первые 2 цифры — группа), `message` — текст для игрока; HTTP-статус соответствует коду
+  (400 форма, 401 нет входа, 409 никнейм занят / конфликт прогресса). На фронте это `ApiError` (`client.ts`).
 - CORS: заголовок задаётся переменной `CORS_ORIGIN` (несколько источников через запятую).
+
+### Игроки и прогресс
+
+- **Вход по никнейму.** Свободный никнейм — создаётся гость и выдаётся `guestToken` (один раз; сервер хранит
+  только его SHA-256). Фронт сохраняет токен в `localStorage`. Занятый никнейм — вход только с токеном его
+  владельца, иначе 409 `NicknameTaken`. Никнеймы сравниваются без учёта регистра и лишних пробелов.
+- **Хранение** — схема `players`: `Players` (никнейм, нормализованный никнейм — уникальный, хеш токена) и
+  `PlayerProgress` (одна строка на игрока и профессию: `Level`, `Percent`, `Difficulty`, `State` jsonb, `Revision`).
+- **`State`** — произвольный JSON-объект игры (день, сцена, флаги диалогов), до 32 КБ. Формат определяет фронт,
+  новые сцены не требуют миграций.
+- **Конфликты.** Каждое сохранение увеличивает `revision`; в `expectedRevision` передаётся последняя известная.
+  Сохранение из устаревшей вкладки получит 409 `ProgressConflict` и не затрёт новые данные.
+- **Профессии** — `ProfessionCatalog` (сейчас `vet`). Регистрация по почте позже «повысит» гостя до аккаунта
+  в той же строке `Players`, прогресс переносить не нужно.
+
+### Структура backend
+
+```
+backend/
+├── Api/                          # хост: контроллеры, аутентификация Guest и AdminJwt, wwwroot/test
+├── Common/Hackat.Common.Result/  # AppResult<T> + AppErrorCodes (сервисы возвращают коды, а не бросают исключения)
+├── Modules/Players/
+│   ├── Hackat.Players.Contracts/ # формы (вход) и модели (выход) API
+│   ├── Hackat.Players.Database/  # DbContext (схема players), сущности, миграции
+│   └── Hackat.Players.Services/  # Service + DatabaseQueries на каждую фичу, AddPlayersServices()
+└── Tests/Hackat.Players.Tests/   # интеграционные тесты: API + PostgreSQL в Testcontainers (нужен Docker)
+```
+
+Новая миграция (из `backend/`, нужен запущенный Postgres из docker-compose):
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Name> -p Modules/Players/Hackat.Players.Database -s Api -o Migrations
+```
 
 ## Troubleshooting
 
 - **frontend не видит API** → проверьте, что backend отвечает: `/health`; посмотрите логи: `make logs` (или `SERVICE=backend make logs`).
 - **БД не инициализируется** → SQL выполняется только при ПЕРВОМ старте volume `pgdata`; чтобы пересоздать: `docker compose down -v && docker compose up -d` (данные будут потеряны).
 - **Порт занят** → переопределите в `.env`: `APP_PORT`, `FRONTEND_PORT`, `POSTGRES_PORT`.
+- **`password authentication failed for user "user"` при `dotnet run`** → на 5432 отвечает другой PostgreSQL
+  (например, установленный в Windows как служба), а не контейнер. Поставьте `POSTGRES_PORT=5433` в `.env`,
+  перезапустите `db` и укажите порт в `ConnectionStrings__Default` (или остановите локальную службу).
+- **Нет Swagger / тестового меню в Docker** → в `.env` должно быть `APP_ENV=Development`.
 - **`npm ci` падает** → `frontend/package-lock.json` устарел: `cd frontend && npm install` и закоммитьте.
 
 ## Генерация нового проекта из шаблона
