@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Common\Hackat.Common.Result\Hackat.Common.Result.csproj" />
+    <ProjectReference Include="..\Hackat.Players.Contracts\Hackat.Players.Contracts.csproj" />
+    <ProjectReference Include="..\Hackat.Players.Database\Hackat.Players.Database.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Hackat.Players.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,42 @@
+/* Общие стили тестового меню: светлая тема, без фреймворков. */
+body {
+  margin: 0; background: #fff; color: #222;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+main.wide { max-width: 960px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 0 0 10px; }
+section { padding: 18px 0; border-top: 1px solid #e5e5e5; }
+a { color: #2f6fde; }
+.muted { color: #777; font-size: 13px; }
+input, select, textarea, button { font: inherit; }
+input, select, textarea {
+  box-sizing: border-box; width: 100%; padding: 7px 9px;
+  border: 1px solid #ccc; border-radius: 6px; background: #fff; color: #222;
+}
+label { display: block; font-size: 13px; color: #555; margin-bottom: 3px; }
+button {
+  padding: 7px 14px; border: 1px solid #2f6fde; border-radius: 6px;
+  background: #2f6fde; color: #fff; cursor: pointer; white-space: nowrap;
+}
+button.link { background: none; border-color: #ccc; color: #333; }
+button:disabled { opacity: .5; cursor: default; }
+.row { display: flex; gap: 8px; align-items: flex-end; }
+.row > .grow { flex: 1; }
+.msg { margin: 8px 0 0; min-height: 1.5em; }
+.ok { color: #1a7f3c; } .err { color: #c0392b; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
+th { color: #777; font-weight: normal; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover, tr.selected { background: #f3f6fc; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.stat { border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-size: 22px; }
+pre {
+  background: #f6f6f6; border-radius: 6px; padding: 10px; margin: 6px 0 0;
+  max-height: 300px; overflow: auto; font-size: 12.5px; white-space: pre-wrap; word-break: break-word;
+}
+details summary { cursor: pointer; color: #555; }
+.table-wrap { overflow-x: auto; }

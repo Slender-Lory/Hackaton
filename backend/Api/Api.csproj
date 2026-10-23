@@ -6,6 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <!-- Нужен только для dotnet ef (migrations add / database update) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Hackat.Common.Result\Hackat.Common.Result.csproj" />
+    <ProjectReference Include="..\Modules\Players\Hackat.Players.Contracts\Hackat.Players.Contracts.csproj" />
+    <ProjectReference Include="..\Modules\Players\Hackat.Players.Database\Hackat.Players.Database.csproj" />
+    <ProjectReference Include="..\Modules\Players\Hackat.Players.Services\Hackat.Players.Services.csproj" />
   </ItemGroup>
 </Project>
