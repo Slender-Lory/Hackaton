@@ -1,6 +1,6 @@
 # Тестовое приложение (шаблон)
 
-Веб-приложение: **.NET 10 API + React (Vite) + PostgreSQL**, всё в Docker, с CI и скриптами деплоя.
+Веб-приложение: **.NET 10 API + Vue (Vite) + PostgreSQL**, всё в Docker, с CI и скриптами деплоя.
 
 ## Как запустить — по шагам
 
@@ -103,7 +103,7 @@ cd frontend && npm install && npm run dev
 ## Архитектура
 
 ```
-Browser (React/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
+Browser (Vue/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 ```
 
 - **Frontend** собирается Vite, отдаётся nginx'ом (SPA fallback → `index.html`, кэш ассетов).
@@ -205,7 +205,7 @@ OUT=../projects ./scaffold.sh --name myapp       # сгенерировать в
 
 ```
 ├── backend/            # .NET: Api (webapi) + опционально Application/Domain/Infrastructure/Contracts/tests
-├── frontend/           # React 18 + TypeScript + Vite 5 (ESLint, Vitest)
+├── frontend/           # Vue 3 + TypeScript + Vite 5 (ESLint, Vitest)
 ├── infra/
 │   ├── db/init/        # SQL, выполняется при первом старте БД
 │   ├── docker/         # Dockerfile backend/frontend

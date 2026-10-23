@@ -1,30 +1,23 @@
 import js from "@eslint/js";
 import globals from "globals";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
+import pluginVue from "eslint-plugin-vue";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   { ignores: ["dist", "coverage", "node_modules", "*.tsbuildinfo"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...pluginVue.configs["flat/recommended"],
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ["**/*.{ts,vue}"],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
-    },
-    plugins: {
-      "react-hooks": reactHooks,
-      "react-refresh": reactRefresh,
-    },
-    rules: {
-      ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      parserOptions: { parser: tseslint.parser },
     },
   },
   {
-    files: ["**/*.test.{ts,tsx}"],
+    files: ["**/*.test.ts"],
     languageOptions: { globals: globals.node },
   },
 );
