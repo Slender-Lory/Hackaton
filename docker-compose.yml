@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════
-#  Docker Compose стек: PostgreSQL + .NET API + React (nginx).
+#  Docker Compose стек: PostgreSQL + .NET API + Vue (nginx).
 #  Все значения параметризованы: cp .env.example .env
 #  Любая переменная может быть опущена — сработает дефолт :-default
 #  Для работы секреты не требуются: работают dev-дефолты.

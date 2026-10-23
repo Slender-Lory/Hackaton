@@ -10,7 +10,7 @@
 secrets.json
 
 # ======================================================
-# Node / Frontend (React + Vite + Vitest)
+# Node / Frontend (Vue + Vite + Vitest)
 # ======================================================
 node_modules/
 dist/
