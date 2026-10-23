@@ -2,7 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Hackat.Players.Contracts.Players;
 
-/// <summary>Вход по никнейму: новый никнейм создаёт гостя, существующий — продолжает игру.</summary>
+/// <summary>
+/// Игра без регистрации: создаётся гость с этим никнеймом (никнеймы не уникальны).
+/// Вернуться к гостю можно только из того же браузера — по токену его сессии.
+/// </summary>
 public sealed class EnterForm
 {
     public const int NicknameMinLength = 2;

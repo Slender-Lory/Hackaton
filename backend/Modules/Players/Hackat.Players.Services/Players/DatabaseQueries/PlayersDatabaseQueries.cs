@@ -9,20 +9,16 @@ internal sealed class PlayersDatabaseQueries(PlayersDbContext dc) : IPlayersData
 {
     public Task<Player?> GetById(Guid id, bool trackChanges = false) =>
         dc.Players
-            .AsTracking(trackChanges ? QueryTrackingBehavior.TrackAll : QueryTrackingBehavior.NoTracking)
+            .AsTracking(Tracking(trackChanges))
             .FirstOrDefaultAsync(u => u.Id == id);
 
-    public Task<Player?> GetByNormalizedNickname(string normalizedNickname) =>
+    public Task<Player?> GetByNormalizedEmail(string normalizedEmail, bool trackChanges = false) =>
         dc.Players
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.NormalizedNickname == normalizedNickname);
+            .AsTracking(Tracking(trackChanges))
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
 
-    public Task<Guid?> GetIdByGuestTokenHash(string guestTokenHash) =>
-        dc.Players
-            .AsNoTracking()
-            .Where(u => u.GuestTokenHash == guestTokenHash)
-            .Select(u => (Guid?)u.Id)
-            .FirstOrDefaultAsync();
+    public Task<bool> IsEmailTaken(string normalizedEmail) =>
+        dc.Players.AnyAsync(u => u.NormalizedEmail == normalizedEmail);
 
     public async Task<bool> TryAdd(Player player)
     {
@@ -39,8 +35,58 @@ internal sealed class PlayersDatabaseQueries(PlayersDbContext dc) : IPlayersData
         }
     }
 
+    public async Task<bool> TrySaveChanges()
+    {
+        try
+        {
+            await dc.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e) when (e.IsUniqueViolation())
+        {
+            dc.ChangeTracker.Clear();
+            return false;
+        }
+    }
+
     public Task TouchLastSeen(Guid id, DateTimeOffset now) =>
         dc.Players
             .Where(u => u.Id == id)
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastSeenAt, now));
+
+    public Task DeleteSessions(Guid playerId) =>
+        dc.PlayerSessions
+            .Where(u => u.PlayerId == playerId)
+            .ExecuteDeleteAsync();
+
+    public async Task<(string[] Transferred, string[] Discarded)> MergeGuestInto(Guid guestId, Guid accountId)
+    {
+        await using var transaction = await dc.Database.BeginTransactionAsync();
+
+        var guestCodes = await ProfessionCodes(guestId);
+        var accountCodes = await ProfessionCodes(accountId);
+        var transferred = guestCodes.Except(accountCodes).ToArray();
+        var discarded = guestCodes.Intersect(accountCodes).ToArray();
+
+        await dc.PlayerProgress
+            .Where(u => u.PlayerId == guestId && transferred.Contains(u.ProfessionCode))
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.PlayerId, accountId));
+
+        // Каскад в БД удалит сессии гостя и непереносённый прогресс. Аккаунт удалить так нельзя.
+        await dc.Players
+            .Where(u => u.Id == guestId && u.RegisteredAt == null)
+            .ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
+        return (transferred, discarded);
+    }
+
+    private Task<string[]> ProfessionCodes(Guid playerId) =>
+        dc.PlayerProgress
+            .Where(u => u.PlayerId == playerId)
+            .Select(u => u.ProfessionCode)
+            .ToArrayAsync();
+
+    private static QueryTrackingBehavior Tracking(bool trackChanges) =>
+        trackChanges ? QueryTrackingBehavior.TrackAll : QueryTrackingBehavior.NoTracking;
 }

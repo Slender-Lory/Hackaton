@@ -93,7 +93,8 @@ cd frontend && npm install && npm run dev
 
 В Development backend отдаёт две страницы для проверки API без фронтенда:
 
-- http://localhost:8080/test/ — **гость**: регистрация/вход по никнейму и «вы вошли как …»;
+- http://localhost:8080/test/ — **игрок**: игра без регистрации (по никнейму), регистрация и вход по почте,
+  «вы вошли как …», для гостя — «сохранить прогресс» (регистрация) и вход в существующий аккаунт;
 - http://localhost:8080/test/admin.html — **администратор**: сводка, список всех игроков с поиском,
   карточка игрока с прогрессом и State. Логин/пароль — `ADMIN_LOGIN` / `ADMIN_PASSWORD`
   (в Development по умолчанию `admin` / `admin12345`).
@@ -123,41 +124,51 @@ Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 | GET | `/health` | liveness (healthcheck'и compose) | `{ status: "ok", service }` |
 | GET | `/ready` | readiness: доступность БД; при `REQUIRE_DATABASE_URL=1` — ещё и наличие `DATABASE_URL` | `{ status: "ready" }` или 503 |
 | GET | `/api/v1/info` | имя, версия, окружение | `{ name, version, environment, date }` |
-| POST | `/api/v1/players/enter` | вход по никнейму (см. ниже) | `{ player, isNew, guestToken }` |
+| POST | `/api/v1/players/enter` | игра без регистрации `{ nickname }` — новый гость | `{ player, token, expiresAt }` |
+| POST | `/api/v1/players/register` | регистрация `{ email, password, nickname? }`; с токеном гостя — гость становится аккаунтом | `{ player, token, expiresAt }` |
+| POST | `/api/v1/players/login` | вход `{ email, password }`; с токеном гостя — перенос его прогресса | `{ player, token, expiresAt, transferredProfessions, discardedProfessions }` |
+| POST | `/api/v1/players/logout` 🔒 | выход с этого устройства (токен перестаёт работать) | `true` |
 | GET | `/api/v1/players/me` 🔒 | профиль + прогресс по всем профессиям | `{ player, progress[] }` |
 | GET | `/api/v1/players/me/progress/{professionCode}` 🔒 | прогресс по профессии (`revision: 0` — не начата) | `ProgressModel` |
 | PUT | `/api/v1/players/me/progress/{professionCode}` 🔒 | сохранить `{ level, percent, difficulty, state, expectedRevision }` | `ProgressModel` |
-
 | POST | `/api/v1/admin/login` | вход администратора `{ login, password }` (10 попыток в минуту) | `{ token, expiresAt, login }` |
-| GET | `/api/v1/admin/players?search=&offset=&count=` 👑 | все игроки с кратким прогрессом | `{ items, total, offset, count }` |
+| GET | `/api/v1/admin/players?search=&kind=&offset=&count=` 👑 | все игроки с кратким прогрессом; `kind`: `All` / `Guests` / `Registered`, поиск по нику или почте | `{ items, total, offset, count }` |
 | GET | `/api/v1/admin/players/{id}` 👑 | карточка игрока: прогресс со State | `AdminPlayerDetailsModel` |
 | GET | `/api/v1/admin/stats` 👑 | всего игроков, новых/активных за сутки, прогресс по профессиям | `AdminStatsModel` |
 
-🔒 — нужен заголовок `Authorization: Guest <guestToken>`.
+🔒 — нужен заголовок `Authorization: Player <token>` (токен из enter / register / login; старый префикс `Guest` тоже работает).
 👑 — нужен заголовок `Authorization: Bearer <token администратора>` (JWT с ролью `admin`, живёт 12 часов).
-Токены не взаимозаменяемы: гостевой не открывает админку, админский — эндпоинты игрока.
+Токены не взаимозаменяемы: токен игрока не открывает админку, админский — эндпоинты игрока.
 
 Соглашения:
 
 - JSON: camelCase, регистронезависимый парсинг.
 - Ответы контроллеров — `{ result, error }`. Ошибка: `error: { code, message }`, где `code` — 8-значный код из
   `AppErrorCodes` (первые 2 цифры — группа), `message` — текст для игрока; HTTP-статус соответствует коду
-  (400 форма, 401 нет входа, 409 никнейм занят / конфликт прогресса). На фронте это `ApiError` (`client.ts`).
+  (400 форма, 401 нет входа / неверная почта или пароль, 409 почта занята / конфликт прогресса,
+  429 слишком много попыток входа). На фронте это `ApiError` (`client.ts`).
 - CORS: заголовок задаётся переменной `CORS_ORIGIN` (несколько источников через запятую).
 
 ### Игроки и прогресс
 
-- **Вход по никнейму.** Свободный никнейм — создаётся гость и выдаётся `guestToken` (один раз; сервер хранит
-  только его SHA-256). Фронт сохраняет токен в `localStorage`. Занятый никнейм — вход только с токеном его
-  владельца, иначе 409 `NicknameTaken`. Никнеймы сравниваются без учёта регистра и лишних пробелов.
-- **Хранение** — схема `players`: `Players` (никнейм, нормализованный никнейм — уникальный, хеш токена) и
-  `PlayerProgress` (одна строка на игрока и профессию: `Level`, `Percent`, `Difficulty`, `State` jsonb, `Revision`).
+- **Гость** — игра без регистрации: `enter` с никнеймом создаёт игрока и сессию. Никнейм — только как
+  обращаться к игроку, он не уникален. Прогресс гостя хранится на сервере, но вернуться к нему можно только
+  из того же браузера (по токену в `localStorage`). Сессия гостя бессрочная; после «Выйти» доступ потерян.
+- **Аккаунт** — почта (уникальна без учёта регистра) и пароль от 8 символов, без подтверждения почты и без
+  восстановления пароля. Регистрация с токеном гостя превращает гостя в аккаунт той же записью — прогресс
+  остаётся. Сессия аккаунта — 30 дней с последнего использования, у каждого устройства своя.
+- **Вход в аккаунт из браузера гостя** — прогресс гостя переносится в профессии, не начатые в аккаунте
+  (`transferredProfessions`); где начаты оба — остаётся прогресс аккаунта (`discardedProfessions`). Гость удаляется.
+- **Безопасность.** Сервер хранит только SHA-256 токенов сессий и PBKDF2-хеш пароля (ASP.NET Core Identity).
+  Ошибка входа одна на «нет такой почты» и «неверный пароль». Регистрация и вход — не больше 10 попыток в минуту с IP.
+- **Хранение** — схема `players`: `Players` (никнейм, почта и хеш пароля у аккаунтов), `PlayerSessions`
+  (хеш токена, срок жизни) и `PlayerProgress` (одна строка на игрока и профессию: `Level`, `Percent`,
+  `Difficulty`, `State` jsonb, `Revision`).
 - **`State`** — произвольный JSON-объект игры (день, сцена, флаги диалогов), до 32 КБ. Формат определяет фронт,
   новые сцены не требуют миграций.
 - **Конфликты.** Каждое сохранение увеличивает `revision`; в `expectedRevision` передаётся последняя известная.
   Сохранение из устаревшей вкладки получит 409 `ProgressConflict` и не затрёт новые данные.
-- **Профессии** — `ProfessionCatalog` (сейчас `vet`). Регистрация по почте позже «повысит» гостя до аккаунта
-  в той же строке `Players`, прогресс переносить не нужно.
+- **Профессии** — `ProfessionCatalog` (сейчас `vet`).
 
 ### Структура backend
 

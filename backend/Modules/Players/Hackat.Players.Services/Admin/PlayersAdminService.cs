@@ -18,12 +18,15 @@ internal sealed class PlayersAdminService(
 {
     public async Task<PagedResult<AdminPlayerListItemModel>> GetPlayers(AdminPlayersFilterForm form)
     {
-        var search = string.IsNullOrWhiteSpace(form.Search)
-            ? null
-            : NicknameNormalizer.ToKey(NicknameNormalizer.ToDisplay(form.Search));
+        var filter = string.IsNullOrWhiteSpace(form.Search)
+            ? new PlayersSearch(null, null, form.Kind)
+            : new PlayersSearch(
+                NicknameNormalizer.ToKey(NicknameNormalizer.ToDisplay(form.Search)),
+                form.Search.Trim().ToLowerInvariant(),
+                form.Kind);
 
-        var players = await adminQueries.Search(search, form.Offset, form.Count);
-        var total = await adminQueries.Count(search);
+        var players = await adminQueries.Search(filter, form.Offset, form.Count);
+        var total = await adminQueries.Count(filter);
 
         return new PagedResult<AdminPlayerListItemModel>(
             players.Select(u => u.ToAdminListItem()).ToArray(),
@@ -39,7 +42,15 @@ internal sealed class PlayersAdminService(
             return AppErrorCodes.PlayerNotFound;
 
         var progress = await progressService.GetAll(playerId);
-        return new AdminPlayerDetailsModel(player.Id, player.Nickname, player.CreatedAt, player.LastSeenAt, progress);
+        return new AdminPlayerDetailsModel(
+            player.Id,
+            player.Nickname,
+            player.IsRegistered,
+            player.Email,
+            player.CreatedAt,
+            player.RegisteredAt,
+            player.LastSeenAt,
+            progress);
     }
 
     public async Task<AdminStatsModel> GetStats()
@@ -55,7 +66,8 @@ internal sealed class PlayersAdminService(
             .ToArray();
 
         return new AdminStatsModel(
-            await adminQueries.Count(normalizedSearch: null),
+            await adminQueries.Count(PlayersSearch.Everyone),
+            await adminQueries.Count(new PlayersSearch(null, null, PlayerKind.Registered)),
             await adminQueries.CountCreatedSince(dayAgo),
             await adminQueries.CountSeenSince(dayAgo),
             professions);

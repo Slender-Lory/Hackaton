@@ -39,13 +39,23 @@ public enum AppErrorCodes
 
     #region Players. Prefix 20
 
-    [Description("Никнейм «{0}» уже занят")]
-    [HttpStatus(409)]
-    NicknameTaken = 20000001,
+    // 20000001 (NicknameTaken) больше не используется: никнеймы не уникальны.
 
     [Description("Игрок не найден")]
     [HttpStatus(404)]
     PlayerNotFound = 20000002,
+
+    [Description("Почта {0} уже зарегистрирована")]
+    [HttpStatus(409)]
+    EmailTaken = 20000003,
+
+    [Description("Неверная почта или пароль")]
+    [HttpStatus(401)]
+    WrongEmailOrPassword = 20000004,
+
+    [Description("Вы уже зарегистрированы")]
+    [HttpStatus(409)]
+    AlreadyRegistered = 20000005,
 
     #endregion
 

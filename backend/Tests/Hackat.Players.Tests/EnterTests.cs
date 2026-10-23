@@ -4,6 +4,7 @@ using Hackat.Players.Tests.Infrastructure;
 
 namespace Hackat.Players.Tests;
 
+/// <summary>Игра без регистрации: гость по никнейму.</summary>
 public sealed class EnterTests
 {
     private HttpClient _client = null!;
@@ -20,7 +21,7 @@ public sealed class EnterTests
     public void TearDown() => _client.Dispose();
 
     [Test]
-    public async Task NewNickname_CreatesGuestWithToken()
+    public async Task Enter_CreatesGuestWithNonExpiringSession()
     {
         var nickname = PlayersApi.UniqueNickname();
 
@@ -28,59 +29,48 @@ public sealed class EnterTests
 
         Assert.That(response.Status, Is.EqualTo(HttpStatusCode.OK), response.Raw);
         var result = response.Body.Result!;
-        Assert.That(result.IsNew, Is.True);
         Assert.That(result.Player.Nickname, Is.EqualTo(nickname), "пробелы по краям обрезаются");
-        Assert.That(result.GuestToken, Is.Not.Null.And.Length.GreaterThanOrEqualTo(40));
+        Assert.That(result.Player.IsRegistered, Is.False);
+        Assert.That(result.Player.Email, Is.Null);
+        Assert.That(result.Token, Has.Length.GreaterThanOrEqualTo(40));
+        Assert.That(result.ExpiresAt, Is.Null, "сессия гостя бессрочная");
     }
 
     [Test]
-    public async Task ExistingNickname_WithOwnersToken_ResumesSamePlayer()
-    {
-        var (created, token) = await _api.NewGuest();
-
-        var response = await _api.Enter(created.Player.Nickname, token);
-
-        Assert.That(response.Status, Is.EqualTo(HttpStatusCode.OK), response.Raw);
-        var result = response.Body.Result!;
-        Assert.That(result.IsNew, Is.False);
-        Assert.That(result.Player.Id, Is.EqualTo(created.Player.Id));
-        Assert.That(result.GuestToken, Is.Null, "токен выдаётся только при создании");
-    }
-
-    [Test]
-    public async Task ExistingNickname_WithoutToken_IsTaken()
-    {
-        var (created, _) = await _api.NewGuest();
-
-        var response = await _api.Enter(created.Player.Nickname);
-
-        Assert.That(response.Status, Is.EqualTo(HttpStatusCode.Conflict), response.Raw);
-        Assert.That(response.Body.Error!.Code, Is.EqualTo(AppErrorCodes.NicknameTaken));
-        Assert.That(response.Body.Error.Message, Does.Contain(created.Player.Nickname));
-    }
-
-    [Test]
-    public async Task ExistingNickname_WithAnotherPlayersToken_IsTaken()
-    {
-        var (first, _) = await _api.NewGuest();
-        var (_, secondToken) = await _api.NewGuest();
-
-        var response = await _api.Enter(first.Player.Nickname, secondToken);
-
-        Assert.That(response.Status, Is.EqualTo(HttpStatusCode.Conflict), response.Raw);
-        Assert.That(response.Body.Error!.Code, Is.EqualTo(AppErrorCodes.NicknameTaken));
-    }
-
-    [Test]
-    public async Task Nickname_IsCaseAndSpaceInsensitive()
+    public async Task SameNickname_CreatesDifferentGuests()
     {
         var nickname = "Вася " + Guid.NewGuid().ToString("N")[..6];
-        var created = await _api.Enter(nickname);
-        Assert.That(created.Status, Is.EqualTo(HttpStatusCode.OK), created.Raw);
 
-        var response = await _api.Enter("  " + nickname.ToUpperInvariant().Replace(" ", "   ") + " ");
+        var first = await _api.Enter(nickname);
+        var second = await _api.Enter(nickname.ToUpperInvariant());
 
-        Assert.That(response.Status, Is.EqualTo(HttpStatusCode.Conflict), response.Raw);
+        Assert.That(first.Status, Is.EqualTo(HttpStatusCode.OK), first.Raw);
+        Assert.That(second.Status, Is.EqualTo(HttpStatusCode.OK), second.Raw);
+        Assert.That(second.Body.Result!.Player.Id, Is.Not.EqualTo(first.Body.Result!.Player.Id));
+    }
+
+    [Test]
+    public async Task GuestToken_OpensProfile()
+    {
+        var (guest, token) = await _api.NewGuest();
+
+        var me = await _api.Me(token);
+
+        Assert.That(me.Status, Is.EqualTo(HttpStatusCode.OK), me.Raw);
+        Assert.That(me.Body.Result!.Player.Id, Is.EqualTo(guest.Player.Id));
+    }
+
+    [Test]
+    public async Task LegacyGuestPrefix_IsAccepted()
+    {
+        var (guest, token) = await _api.NewGuest();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/players/me");
+        request.Headers.TryAddWithoutValidation("Authorization", $"Guest {token}");
+
+        using var response = await _client.SendAsync(request);
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(await response.Content.ReadAsStringAsync(), Does.Contain(guest.Player.Id.ToString()));
     }
 
     [TestCase("")]
@@ -96,13 +86,14 @@ public sealed class EnterTests
     }
 
     [Test]
-    public async Task ConcurrentEnter_WithSameNickname_CreatesOnlyOnePlayer()
+    public async Task GuestLogout_RevokesToken()
     {
-        var nickname = PlayersApi.UniqueNickname();
+        var (_, token) = await _api.NewGuest();
 
-        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => _api.Enter(nickname)));
+        var logout = await _api.Logout(token);
+        var me = await _api.Me(token);
 
-        Assert.That(responses.Count(r => r.Status == HttpStatusCode.OK), Is.EqualTo(1));
-        Assert.That(responses.Count(r => r.Status == HttpStatusCode.Conflict), Is.EqualTo(7));
+        Assert.That(logout.Status, Is.EqualTo(HttpStatusCode.OK), logout.Raw);
+        Assert.That(me.Status, Is.EqualTo(HttpStatusCode.Unauthorized), me.Raw);
     }
 }
