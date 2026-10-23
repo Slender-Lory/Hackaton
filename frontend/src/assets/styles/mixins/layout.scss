@@ -1,0 +1,36 @@
+// Повторяющиеся (≥3 раз) сочетания свойств.
+
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin column($gap: $indent-step * 3) {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: $gap;
+}
+
+// Карточка-поверхность: фон, скругление, тень
+@mixin surface($shadow: $shadow-md) {
+    border-radius: $radius-lg;
+    background: $color-surface;
+    box-shadow: $shadow;
+}
+
+@mixin button-reset {
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+// Одноразовое появление «с пружиной»; $order — номер элемента для поочерёдного появления
+@mixin appear($name: pop-in, $duration: 0.55s, $order: null) {
+    animation: $name $duration $ease-back-out both;
+
+    @if $order {
+        animation-delay: calc(#{$order} * #{$stagger-step});
+    }
+}

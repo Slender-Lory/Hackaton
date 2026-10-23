@@ -1,0 +1,11 @@
+export default {
+    bracketSpacing: false,
+    singleQuote: true,
+    trailingComma: 'all',
+    tabWidth: 4,
+    printWidth: 120,
+    endOfLine: 'lf',
+    singleAttributePerLine: true,
+    bracketSameLine: false,
+    htmlWhitespaceSensitivity: 'ignore',
+};

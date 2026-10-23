@@ -1,0 +1,57 @@
+@import './animations';
+
+:root {
+    color-scheme: light;
+
+    @each $name, $color in $professions {
+        --profession-#{$name}: #{$color};
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    color: $color-text-primary;
+    background: $color-sky-bottom;
+    font-family: $font-primary;
+    font-size: $font-size-md;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+p {
+    margin: 0;
+}
+
+button {
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+}
+
+:focus-visible {
+    outline: 3px solid $color-vet;
+    outline-offset: 3px;
+}

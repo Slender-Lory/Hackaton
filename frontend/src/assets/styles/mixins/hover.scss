@@ -1,0 +1,9 @@
+$mouse-device: '(hover: hover) and (pointer: fine)';
+
+@mixin hover {
+    &:hover {
+        @media #{$mouse-device} {
+            @content;
+        }
+    }
+}
