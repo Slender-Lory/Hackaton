@@ -2,13 +2,13 @@ using System.Buffers.Text;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Hackat.Players.Services.Players;
+namespace Hackat.Players.Services.Sessions;
 
 /// <summary>
-/// Гостевой токен: 32 случайных байта (base64url). В БД хранится только SHA-256 —
+/// Токен сессии: 32 случайных байта (base64url). В БД хранится только SHA-256 —
 /// при утечке БД токены не восстановить. Для токена с такой энтропией соль/медленный хеш не нужны.
 /// </summary>
-internal static class GuestTokens
+internal static class SessionTokens
 {
     private const int TokenBytes = 32;
 

@@ -13,7 +13,7 @@ public sealed class AdminAuthController(AdminAuthService adminAuthService) : Api
     /// <summary>Вход администратора. Токен передавать в заголовке <c>Authorization: Bearer &lt;token&gt;</c>.</summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    [EnableRateLimiting(AdminAuthExtensions.LoginRateLimitPolicy)]
+    [EnableRateLimiting(AuthRateLimits.AdminLogin)]
     public ActionResult<AppResult<AdminTokenModel>> Login([FromBody] AdminLoginForm form) =>
         AppResult(adminAuthService.Login(form));
 

@@ -97,6 +97,35 @@ public sealed class AdminTests
     }
 
     [Test]
+    public async Task Players_SearchByEmail_FindsRegisteredPlayer()
+    {
+        var (account, email, _) = await _players.NewAccount();
+
+        var response = await _admin.Players(AdminAuth, search: email[..20].ToUpperInvariant());
+
+        Assert.That(response.Status, Is.EqualTo(HttpStatusCode.OK), response.Raw);
+        var item = response.Body.Result!.Items.Single();
+        Assert.That(item.Id, Is.EqualTo(account.Player.Id));
+        Assert.That(item.IsRegistered, Is.True);
+        Assert.That(item.Email, Is.EqualTo(email));
+        Assert.That(item.RegisteredAt, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task Players_KindFilter_SeparatesGuestsAndAccounts()
+    {
+        var (guest, _) = await _players.NewGuest();
+        var (account, _, _) = await _players.NewAccount();
+
+        var guests = (await _admin.Players(AdminAuth, kind: "Guests", count: 100)).Body.Result!.Items;
+        var registered = (await _admin.Players(AdminAuth, kind: "Registered", count: 100)).Body.Result!.Items;
+
+        Assert.That(guests.Select(u => u.Id), Does.Contain(guest.Player.Id).And.Not.Contain(account.Player.Id));
+        Assert.That(registered.Select(u => u.Id), Does.Contain(account.Player.Id).And.Not.Contain(guest.Player.Id));
+        Assert.That(guests, Has.All.Matches<Hackat.Players.Contracts.Admin.AdminPlayerListItemModel>(u => !u.IsRegistered));
+    }
+
+    [Test]
     public async Task Players_Paging_RespectsCount()
     {
         await _players.NewGuest();
@@ -138,11 +167,13 @@ public sealed class AdminTests
         var before = (await _admin.Stats(AdminAuth)).Body.Result!;
         var (_, token) = await _players.NewGuest();
         await _players.SaveProgress(token, ProfessionCatalog.Veterinarian, new { level = 5, percent = 100, expectedRevision = 0 });
+        await _players.NewAccount();
 
         var after = (await _admin.Stats(AdminAuth)).Body.Result!;
 
         // Тесты идут параллельно с другими классами, поэтому проверяем «не меньше».
-        Assert.That(after.TotalPlayers, Is.GreaterThanOrEqualTo(before.TotalPlayers + 1));
+        Assert.That(after.TotalPlayers, Is.GreaterThanOrEqualTo(before.TotalPlayers + 2));
+        Assert.That(after.RegisteredPlayers, Is.GreaterThanOrEqualTo(before.RegisteredPlayers + 1));
         Assert.That(after.NewLast24Hours, Is.GreaterThanOrEqualTo(before.NewLast24Hours + 1));
         var vetBefore = before.Professions.Single(u => u.ProfessionCode == ProfessionCatalog.Veterinarian);
         var vetAfter = after.Professions.Single(u => u.ProfessionCode == ProfessionCatalog.Veterinarian);

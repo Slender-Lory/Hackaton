@@ -54,13 +54,14 @@ builder.Services
     .AddPlayersServices();
 
 // ── Аутентификация ───────────────────────────────────────────────────
-//  Guest    — игрок: Authorization: Guest <token> (схема по умолчанию)
+//  Player   — игрок (гость или аккаунт): Authorization: Player <token> (схема по умолчанию)
 //  AdminJwt — администратор: Authorization: Bearer <jwt>, политика Admin
 builder.Services
-    .AddAuthentication(GuestAuthenticationHandler.SchemeName)
-    .AddScheme<AuthenticationSchemeOptions, GuestAuthenticationHandler>(GuestAuthenticationHandler.SchemeName, null)
+    .AddAuthentication(PlayerAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, PlayerAuthenticationHandler>(PlayerAuthenticationHandler.SchemeName, null)
     .AddAdminJwt();
 builder.Services.AddAuthorization();
+builder.Services.AddAuthRateLimits();
 
 // ── Контроллеры: ошибки валидации в том же формате, что и остальные ─
 builder.Services
@@ -79,16 +80,16 @@ builder.Services.AddSwaggerGen(o =>
         Description = "API, сгенерированное из шаблона",
     });
 
-    var guestScheme = new OpenApiSecurityScheme
+    var playerScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Description = "Гостевой токен из POST /api/v1/players/enter. Значение: Guest <token>",
-        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = GuestAuthenticationHandler.SchemeName },
+        Description = "Токен игрока из enter / register / login. Значение: Player <token>",
+        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = PlayerAuthenticationHandler.SchemeName },
     };
-    o.AddSecurityDefinition(GuestAuthenticationHandler.SchemeName, guestScheme);
-    o.AddSecurityRequirement(new OpenApiSecurityRequirement { [guestScheme] = [] });
+    o.AddSecurityDefinition(PlayerAuthenticationHandler.SchemeName, playerScheme);
+    o.AddSecurityRequirement(new OpenApiSecurityRequirement { [playerScheme] = [] });
 
     var adminScheme = new OpenApiSecurityScheme
     {
