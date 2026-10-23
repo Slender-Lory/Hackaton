@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход в игру</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>Вход в игру</h1>
+  <p class="muted">Тестовое меню гостя. <a href="admin.html">Вход для администратора</a></p>
+
+  <section id="enter-panel">
+    <h2>Регистрация и вход</h2>
+    <form id="enter-form" class="row">
+      <div class="grow">
+        <label for="nickname">Никнейм — новый или уже ваш</label>
+        <input id="nickname" maxlength="24" autocomplete="off" placeholder="Например, Вася" required>
+      </div>
+      <button type="submit">Войти</button>
+    </form>
+    <p id="enter-msg" class="msg"></p>
+  </section>
+
+  <section id="account-panel" hidden>
+    <h2>Вы вошли в аккаунт</h2>
+    <div class="row">
+      <p class="grow" style="margin:0">Никнейм: <b id="account-name"></b></p>
+      <button class="link" id="logout" type="button">Выйти</button>
+    </div>
+    <p class="muted" id="account-meta" style="margin:4px 0 0"></p>
+  </section>
+</main>
+
+<script>
+  // Токены гостей, созданных в этом браузере: [{ playerId, nickname, token }].
+  // Сервер выдаёт токен один раз — при создании игрока; по нему же пускает обратно по никнейму.
+  const GUESTS_KEY = "hackat.guests";
+  const CURRENT_KEY = "hackat.currentPlayerId";
+
+  const storage = {
+    read(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+    },
+    write(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* приватный режим */ }
+    },
+  };
+
+  const guests = () => storage.read(GUESTS_KEY, []);
+  const currentId = () => storage.read(CURRENT_KEY, null);
+  const normalize = (s) => s.trim().replace(/\s+/g, " ").toLowerCase();
+  const $ = (id) => document.getElementById(id);
+
+  async function api(method, path, { body, token } = {}) {
+    const headers = {};
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (token) headers["Authorization"] = `Guest ${token}`;
+    try {
+      const res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      return { ok: res.ok, result: data?.result, error: data?.error ?? (res.ok ? null : { message: `Ошибка ${res.status}` }) };
+    } catch (e) {
+      return { ok: false, error: { message: `Нет связи с сервером: ${e.message}` } };
+    }
+  }
+
+  function showMsg(text, ok) {
+    $("enter-msg").textContent = text;
+    $("enter-msg").className = `msg ${ok ? "ok" : "err"}`;
+  }
+
+  function showAccount(player) {
+    $("account-name").textContent = player.nickname;
+    $("account-meta").textContent = `Аккаунт создан ${new Date(player.createdAt).toLocaleString("ru-RU")}`;
+    $("account-panel").hidden = false;
+    $("enter-panel").hidden = true;
+  }
+
+  function logout() {
+    storage.write(CURRENT_KEY, null);
+    $("account-panel").hidden = true;
+    $("enter-panel").hidden = false;
+    showMsg("", true);
+  }
+
+  $("enter-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nickname = $("nickname").value;
+    const known = guests().find((g) => normalize(g.nickname) === normalize(nickname));
+
+    const r = await api("POST", "/api/v1/players/enter", { body: { nickname }, token: known?.token });
+    if (!r.ok) {
+      showMsg(r.error.message, false);
+      return;
+    }
+
+    const { player, isNew, guestToken } = r.result;
+    if (isNew) {
+      storage.write(GUESTS_KEY, [...guests().filter((g) => g.playerId !== player.id),
+        { playerId: player.id, nickname: player.nickname, token: guestToken }]);
+    }
+    storage.write(CURRENT_KEY, player.id);
+    $("nickname").value = "";
+    showAccount(player);
+  });
+
+  $("logout").addEventListener("click", logout);
+
+  // Если в этом браузере уже выполнен вход — проверяем токен и показываем аккаунт.
+  (async () => {
+    const guest = guests().find((g) => g.playerId === currentId());
+    if (!guest) return;
+    const r = await api("GET", "/api/v1/players/me", { token: guest.token });
+    if (r.ok) showAccount(r.result.player);
+    else logout();
+  })();
+</script>
+</body>
+</html>

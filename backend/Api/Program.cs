@@ -1,4 +1,14 @@
 using System.Text.Json;
+using Api.Auth;
+using Api.Auth.Admin;
+using Api.Common;
+using Hackat.Common.Result.ErrorCodes;
+using Hackat.Players.Database.Context;
+using Hackat.Players.Database.Extensions;
+using Hackat.Players.Services.Extensions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +48,25 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.PropertyNameCaseInsensitive = true;
 });
 
+// ── Модули ───────────────────────────────────────────────────────────
+builder.Services
+    .AddPlayersDatabase(sp => DatabaseConnection.Resolve(sp.GetRequiredService<IConfiguration>()))
+    .AddPlayersServices();
+
+// ── Аутентификация ───────────────────────────────────────────────────
+//  Guest    — игрок: Authorization: Guest <token> (схема по умолчанию)
+//  AdminJwt — администратор: Authorization: Bearer <jwt>, политика Admin
+builder.Services
+    .AddAuthentication(GuestAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, GuestAuthenticationHandler>(GuestAuthenticationHandler.SchemeName, null)
+    .AddAdminJwt();
+builder.Services.AddAuthorization();
+
+// ── Контроллеры: ошибки валидации в том же формате, что и остальные ─
+builder.Services
+    .AddControllers()
+    .ConfigureApiBehaviorOptions(o => o.InvalidModelStateResponseFactory = AppResultResponses.InvalidModelState);
+
 // ── OpenAPI / Swagger ────────────────────────────────────────────────
 var appName = builder.Configuration["APP_NAME"] ?? AssemblyName;
 builder.Services.AddEndpointsApiExplorer();
@@ -49,18 +78,62 @@ builder.Services.AddSwaggerGen(o =>
         Version = "v1",
         Description = "API, сгенерированное из шаблона",
     });
+
+    var guestScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Description = "Гостевой токен из POST /api/v1/players/enter. Значение: Guest <token>",
+        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = GuestAuthenticationHandler.SchemeName },
+    };
+    o.AddSecurityDefinition(GuestAuthenticationHandler.SchemeName, guestScheme);
+    o.AddSecurityRequirement(new OpenApiSecurityRequirement { [guestScheme] = [] });
+
+    var adminScheme = new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Токен администратора из POST /api/v1/admin/login",
+        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = AdminAuthOptions.SchemeName },
+    };
+    o.AddSecurityDefinition(AdminAuthOptions.SchemeName, adminScheme);
+    o.AddSecurityRequirement(new OpenApiSecurityRequirement { [adminScheme] = [] });
 });
 
 var app = builder.Build();
 
+// ── Миграции БД при старте (Database__MigrateOnStartup=false — отключить) ─
+if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<PlayersDbContext>().Database.MigrateAsync();
+}
+
 // ── Pipeline ─────────────────────────────────────────────────────────
+// Необработанное исключение → 500 в формате AppResult (детали — только в логах).
+app.UseExceptionHandler(errorApp => errorApp.Run(context =>
+    AppResultResponses.WriteError(context, AppErrorCodes.UnknownError)));
+
 app.UseCors();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Тестовое меню для проверки API без фронтенда: /test/ (wwwroot/test/index.html;
+    // /test без слеша DefaultFiles сам перенаправит на /test/).
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
+
+app.MapControllers();
 
 // ── Эндпоинты ────────────────────────────────────────────────────────
 // Liveness: процесс жив и отвечает.
@@ -69,9 +142,8 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", service = appName })
    .WithTags("ops");
 
 // Readiness: процесс готов принимать трафик.
-// По умолчанию проверяется только наличие обязательной конфигурации.
-// Расширяйте: пинг БД, кэша, внешних сервисов и т.п.
-app.MapGet("/ready", () =>
+// Проверяется наличие обязательной конфигурации и доступность БД.
+app.MapGet("/ready", async (PlayersDbContext db, CancellationToken ct) =>
 {
     var problems = new List<string>();
 
@@ -80,6 +152,11 @@ app.MapGet("/ready", () =>
         && string.IsNullOrWhiteSpace(app.Configuration["DATABASE_URL"]))
     {
         problems.Add("DATABASE_URL is not set");
+    }
+
+    if (!await db.Database.CanConnectAsync(ct))
+    {
+        problems.Add("Database is not reachable");
     }
 
     return problems.Count == 0
@@ -101,7 +178,7 @@ app.MapGet("/api/v1/info", () => Results.Ok(new
 app.Run();
 
 // Метаданные сборки для /api/v1/info
-partial class Program
+public partial class Program
 {
     private static readonly string AssemblyName =
         System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "api";
