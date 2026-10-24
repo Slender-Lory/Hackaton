@@ -76,12 +76,20 @@
  */
 
 /**
+ * Кто говорит в сцене: реплика показывается с именем и ролью.
+ * @typedef {object} Speaker
+ * @property {string} name
+ * @property {string} role
+ */
+
+/**
  * Вариант сцены: срабатывает первый, чьи условия выполнены. Последний вариант — без условий.
  * @typedef {object} StoryVariant
  * @property {string} id
  * @property {Condition[]} [when]
  * @property {string} title
  * @property {string} text
+ * @property {Speaker} [speaker]
  * @property {Effects} [effects]
  */
 
@@ -92,6 +100,7 @@
  * @property {string} id
  * @property {string} title
  * @property {string} text
+ * @property {Speaker} [speaker]
  * @property {Effects} [effects]
  * @property {StoryVariant[]} [variants]
  * @property {Hints} [hints] сцена вместо выбора: подсказка объясняет, почему поступили так
@@ -103,6 +112,7 @@
  * @property {string} id
  * @property {string} title
  * @property {string} text
+ * @property {Speaker} [speaker]
  * @property {Hints} hints
  * @property {ChoiceOption[]} options
  */
@@ -166,7 +176,7 @@
 
 /**
  * Болезнь поросёнка: от неё зависят пометки на 2D-иллюстрации.
- * @typedef {'ulcers' | 'erysipelas' | 'lame' | 'cough' | 'diarrhea'} PigCondition
+ * @typedef {'urticaria' | 'septic' | 'lame' | 'fever' | 'carrier'} PigCondition
  */
 
 /**
@@ -184,7 +194,7 @@
  * @typedef {object} ActivityPatient
  * @property {string} id
  * @property {string} name
- * @property {'dog' | 'cat' | 'bird' | 'pig'} kind
+ * @property {'dog' | 'cat' | 'pig'} kind
  * @property {HerdPig[]} [herd]
  * @property {boolean} isSick
  * @property {Passport} passport

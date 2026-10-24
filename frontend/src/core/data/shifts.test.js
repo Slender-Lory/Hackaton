@@ -11,6 +11,7 @@ import {
     pickByConditions,
     startShift,
 } from '@/core/utils/shift';
+import {createTriageState, resolveTriage} from '@/core/utils/triage';
 import {clinicRooms} from './clinic';
 import {START_COUNTERS, chapterEndings, shifts} from './shifts';
 
@@ -120,7 +121,7 @@ function getAllConditions() {
  * @param {(step: ShiftStep, state: ShiftState) => string | string[]} pick
  * @returns {ShiftState}
  */
-function playChapter(pick) {
+function playChapter(pick, triagePlan) {
     const initial = {
         version: 2,
         shift: 0,
@@ -139,6 +140,21 @@ function playChapter(pick) {
 
             expect(meetsConditions(room.unlock, activityState), `${activity.code}: комната`).toBe(true);
             expect(meetsConditions(activity.requires, activityState), `${activity.code}: условия`).toBe(true);
+
+            if (activity.kind === 'triage') {
+                const [doctor, assistant] = triagePlan;
+                const triage = {...createTriageState(0), assignments: {doctor, assistant}};
+                const result = resolveTriage(triage);
+
+                return {
+                    ...activityState,
+                    counters: applyEffects(activityState.counters, result.effects),
+                    answers: {
+                        ...activityState.answers,
+                        [activity.code]: {triage: {...triage, outcomeId: result.outcomeId}},
+                    },
+                };
+            }
 
             return activity.steps.reduce((state, step) => {
                 const answer =
@@ -218,6 +234,14 @@ describe('сюжет главы', () => {
         getAllConditions()
             .filter((condition) => condition.answer)
             .forEach(({answer}) => {
+                const activity = allActivities.find((item) => item.activity.code === answer.activity)?.activity;
+
+                if (activity?.kind === 'triage') {
+                    expect(answer.step).toBe('triage');
+
+                    return;
+                }
+
                 const step = allSteps.find(
                     (item) => item.activity.code === answer.activity && item.step.id === answer.step,
                 )?.step;
@@ -233,16 +257,41 @@ describe('сюжет главы', () => {
         groups.forEach((group) => expect(group.at(-1).when).toBeUndefined());
     });
 
-    it('лучшие решения спасают ферму', () => {
-        const state = playChapter(pickBy(1));
+    it('лучшие решения спасают ферму, и на прививки хватает денег', () => {
+        const state = playChapter(pickBy(1), ['dog', 'rabbit']);
 
+        expect(state.answers['farm-visit-2'].vaccination).toBe('all-now');
         expect(state.answers['farm-visit-3'].outcome).toBe('saved');
-        expect(state.answers['ward-parrot-2'].outcome).toBe('saved');
-        expect(['best-clinic', 'farm-saved']).toContain(pickByConditions(chapterEndings.vet, state)?.id);
+        expect(['clinic-thrives', 'farm-saved']).toContain(pickByConditions(chapterEndings.vet, state)?.id);
+    });
+
+    it('если очередь отняла деньги, привить всех клинике не по карману', () => {
+        let lockedIds = [];
+        const pick = (step, current) => {
+            if (step.id === 'vaccination') {
+                lockedIds = getUnaffordableOptionIds(step.options, current.counters.revenue);
+            }
+
+            return pickBy(1)(step, current);
+        };
+
+        playChapter(pick, ['rabbit', 'cat']);
+
+        expect(lockedIds).toContain('all-now');
+    });
+
+    it('честная передача фермы ведёт к средней концовке', () => {
+        const state = playChapter(
+            (step, current) => (step.id === 'vaccination' ? 'hand-over' : pickBy(1)(step, current)),
+            ['dog', 'rabbit'],
+        );
+
+        expect(state.answers['farm-visit-3'].outcome).toBe('handed-over');
+        expect(pickByConditions(chapterEndings.vet, state)?.id).toBe('honest-handover');
     });
 
     it('худшие решения ведут к потерям, но не к концу игры', () => {
-        const state = playChapter(pickBy(-1));
+        const state = playChapter(pickBy(-1), ['cat', 'rabbit']);
 
         expect(state.answers['farm-visit-3'].outcome).toBe('heavy-loss');
         expect(pickByConditions(chapterEndings.vet, state)).not.toBeNull();

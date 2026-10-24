@@ -68,7 +68,7 @@ function handleSwipeEnd(event) {
                 <PatientArt
                     :key="pig?.id ?? activity.patient.id"
                     :kind="activity.patient.kind"
-                    :is-sick="pig ? true : activity.patient.isSick"
+                    :is-sick="pig ? pig.condition !== 'carrier' : activity.patient.isSick"
                     :condition="pig?.condition ?? null"
                     :alt="`Пациент ${pig?.name ?? activity.patient.name}`"
                 />

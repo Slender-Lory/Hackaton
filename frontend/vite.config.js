@@ -8,13 +8,7 @@ export default defineConfig(({mode}) => {
     const env = loadEnv(mode, '.', '');
 
     return {
-        plugins: [
-            vue({
-                // <model-viewer> — веб-компонент (@google/model-viewer), не Vue-компонент
-                template: {compilerOptions: {isCustomElement: (tag) => tag === 'model-viewer'}},
-            }),
-            tailwindcss(),
-        ],
+        plugins: [vue(), tailwindcss()],
         resolve: {
             alias: {'@': fileURLToPath(new URL('./src', import.meta.url))},
         },

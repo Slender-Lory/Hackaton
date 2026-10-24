@@ -2,7 +2,7 @@ import {REPUTATION} from '@/core/data/reputation';
 import {TRIAGE_DURATION_MS, TRIAGE_OUTCOMES, TRIAGE_PATIENTS, TRIAGE_SCENARIO_ID} from '@/core/data/triage';
 
 const PATIENT_IDS = TRIAGE_PATIENTS.map((patient) => patient.id);
-const FALLBACK_ORDER = ['cat', 'dog', 'parrot'];
+const FALLBACK_ORDER = ['cat', 'rabbit', 'dog'];
 
 export function createTriageState(now, scenarioId = TRIAGE_SCENARIO_ID) {
     return {
@@ -71,26 +71,28 @@ export function resolveTriage(state) {
     if (!isCompleteAssignment(state.assignments)) throw new Error('Сначала распредели пациентов');
     const {doctor, assistant} = state.assignments;
     const waiting = getWaitingPatient(state.assignments);
-    const referred = state.waitingDecision === 'refer' && waiting !== 'parrot';
-    const parrotSaved = waiting !== 'parrot';
-    const strayHelped = !(waiting === 'dog' && referred);
+    const referred = state.waitingDecision === 'refer' && waiting !== 'dog';
+    const dogHelped = waiting !== 'dog';
+    const rabbitTreated = !(waiting === 'rabbit' && referred);
     const catTreated = !(waiting === 'cat' && referred);
-    const correctPriority = parrotSaved && (doctor === 'dog' || assistant === 'dog');
-    const allStable = parrotSaved && strayHelped && catTreated;
-    const outcomeId = referred ? (waiting === 'dog' ? 'stray-refused' : 'owner-left') : `${doctor}-${assistant}`;
+    const videoPromised = doctor === 'rabbit';
+    const triplePaid = doctor === 'cat';
+    const correctPriority = dogHelped && (doctor === 'rabbit' || assistant === 'rabbit');
+    const allStable = dogHelped && rabbitTreated && catTreated;
+    const outcomeId = referred ? `${waiting}-refused` : `${doctor}-${assistant}`;
     const reputationEvents = [
-        {code: parrotSaved ? 'parrotSaved' : 'parrotDied', label: parrotSaved ? 'Попугай спасён' : 'Потеря попугая'},
         {
-            code: strayHelped ? 'strayHelped' : 'strayRefused',
-            label: strayHelped ? 'Помощь бродячей собаке' : 'Отказ собаке Олега',
+            code: dogHelped ? 'triageDogHelped' : 'triageDogWorse',
+            label: dogHelped ? 'Пёс Олега получил помощь вовремя' : 'Псу Олега стало хуже в очереди',
         },
-        ...(allStable ? [{code: 'triageNoLosses', label: 'Все пациенты стабильны'}] : []),
-        ...(!parrotSaved ? [{code: 'triageLoss', label: 'Потеря пациента в триаже'}] : []),
+        ...(videoPromised ? [{code: 'triageVideo', label: 'Жанна снимет видео о клинике'}] : []),
+        ...(allStable ? [{code: 'triageNoLosses', label: 'Помощь получили все трое'}] : []),
         {
             code: correctPriority ? 'triageRightOrder' : 'triageWrongOrder',
             label: correctPriority ? 'Срочные приняты первыми' : 'Срочные пациенты ждали',
         },
-        ...(!catTreated ? [{code: 'ownerRefusedToWait', label: 'Владелица ушла'}] : []),
+        ...(!rabbitTreated ? [{code: 'triageBadReview', label: 'Жанна рассказала об отказе в сети'}] : []),
+        ...(!catTreated ? [{code: 'ownerRefusedToWait', label: 'Борис Аркадьевич ушёл'}] : []),
     ].map((event) => ({...event, value: REPUTATION[event.code]}));
 
     return {
@@ -98,15 +100,18 @@ export function resolveTriage(state) {
         outcomeId,
         ...TRIAGE_OUTCOMES[outcomeId],
         effects: {
-            revenue: (catTreated ? 4500 : 0) - (parrotSaved ? 3000 : 1000) - (strayHelped ? 2500 : 0),
+            revenue:
+                (dogHelped ? -3000 : -12000) +
+                (rabbitTreated ? 3500 : 0) +
+                (triplePaid ? 13500 : catTreated ? 4500 : 0),
             reputation: reputationEvents.reduce((total, event) => total + event.value, 0),
         },
         patientOutcomes: {
-            parrot: parrotSaved ? 'stable' : 'lost',
-            dog: strayHelped ? 'stable' : 'referred',
+            dog: dogHelped ? 'stable' : 'worse',
+            rabbit: rabbitTreated ? 'stable' : 'referred',
             cat: catTreated ? 'stable' : 'referred',
         },
-        flags: {parrotSaved, strayHelped, correctPriority, allStable, timedOut: state.timedOut},
+        flags: {dogHelped, videoPromised, triplePaid, correctPriority, allStable, timedOut: state.timedOut},
         order: [doctor, assistant, waiting],
         reputationEvents,
     };

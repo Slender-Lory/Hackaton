@@ -8,6 +8,7 @@ import ShiftChecklist from '@/components/Shift/ShiftChecklist.vue';
 import ShiftChoice from '@/components/Shift/ShiftChoice.vue';
 import ShiftEffects from '@/components/Shift/ShiftEffects.vue';
 import ShiftExam from '@/components/Shift/ShiftExam.vue';
+import ShiftScene from '@/components/Shift/ShiftScene.vue';
 import UiButton from '@/components/Ui/UiButton.vue';
 
 const props = defineProps({
@@ -37,6 +38,7 @@ const variant = computed(() => (isStory.value ? getStoryVariant(step.value, prop
 const view = computed(() => ({
     title: variant.value?.title ?? step.value.title,
     text: variant.value?.text ?? step.value.text,
+    speaker: variant.value?.speaker ?? step.value.speaker ?? null,
     effects: variant.value ? variant.value.effects : step.value.effects,
 }));
 const lockedOptions = computed(() =>
@@ -131,8 +133,24 @@ function handleHintToggle() {
                 :key="step.id"
                 class="shift-activity__step"
             >
+                <ShiftScene :room-code="activity.roomCode" />
                 <h2 class="shift-activity__step-title">{{ view.title }}</h2>
-                <p class="shift-activity__text">{{ view.text }}</p>
+                <p
+                    v-if="view.speaker"
+                    class="shift-activity__speaker"
+                >
+                    <span
+                        class="shift-activity__avatar"
+                        aria-hidden="true"
+                    >
+                        {{ view.speaker.name.charAt(0) }}
+                    </span>
+                    <span>
+                        <span class="shift-activity__speaker-name">{{ view.speaker.name }}</span>
+                        <span class="shift-activity__speaker-role">{{ view.speaker.role }}</span>
+                    </span>
+                </p>
+                <p :class="['shift-activity__text', {'shift-activity__text--speech': view.speaker}]">{{ view.text }}</p>
 
                 <div
                     v-if="hint && !isAnswered"
@@ -319,6 +337,43 @@ function handleHintToggle() {
 
     &__step-title {
         @include display($font-size-xl);
+    }
+
+    &__speaker {
+        display: flex;
+        align-items: center;
+        gap: $indent-step * 3;
+    }
+
+    &__avatar {
+        flex-shrink: 0;
+        width: $indent-step * 10;
+        height: $indent-step * 10;
+        color: $color-white;
+        border-radius: $radius-chip;
+        background-color: $color-accent;
+        font-weight: $font-weight-bold;
+
+        @include flex-center;
+    }
+
+    &__speaker-name {
+        display: block;
+        font-weight: $font-weight-bold;
+    }
+
+    &__speaker-role {
+        display: block;
+        color: $color-ink-soft;
+        font-size: $font-size-xs;
+    }
+
+    &__text--speech {
+        border-radius: $radius-card-inner;
+        background-color: $color-card-text-box;
+
+        @include padding('y', 3);
+        @include padding('x', 4);
     }
 
     &__text {

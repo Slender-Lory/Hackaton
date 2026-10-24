@@ -11,7 +11,6 @@
 | Маршруты       | vue-router 4, history mode                                                                                                   |
 | Стили          | SCSS по БЭМ; Tailwind v4 только внутри компонентов из открытых китов                                                         |
 | UI-киты        | Reka UI (примитивы, на них построен shadcn-vue), порты из Inspira UI, иконки Lucide                                          |
-| 3D             | `@google/model-viewer`, модели `.glb` в `public/models`                                                                      |
 | Тесты          | Vitest                                                                                                                       |
 | Форматирование | Prettier ([`.prettierrc.js`](../../frontend/.prettierrc.js)), ESLint ([`eslint.config.js`](../../frontend/eslint.config.js)) |
 
@@ -22,7 +21,6 @@
 ```
 frontend/
 ├── index.html            # шрифты, <title>, точка монтирования #root
-├── public/models/        # 3D-модели .glb (источники и лицензии — CREDITS.md)
 ├── CREDITS.md            # все сторонние материалы и их лицензии
 └── src/
     ├── main.js           # createApp + Pinia + router + глобальные стили
@@ -35,7 +33,7 @@ frontend/
     │   │   └── Inspira/  #   порты из Inspira UI (Tailwind внутри)
     │   ├── Header/       #   TheHeader, HeaderPlayer
     │   ├── Professions/  #   колода: ProfessionsPicker, ProfessionCard, ProfessionCardBack
-    │   ├── Patients/     #   3D-пациенты и паспорт: PatientModel, PatientPassport
+    │   ├── Patients/     #   2D-пациенты и паспорт: PatientArt, PatientPassport
     │   ├── Clinic/       #   план клиники
     │   ├── Shift/        #   смена: счётчики, шаги дела (сцена, выбор, обследование), финал
     │   ├── Forms/        #   формы входа
@@ -111,17 +109,15 @@ core/utils, core/constants, core/data, core/types → ничего из прил
 - Переходы только по имени: `router.push({name: ROUTE_NAMES.game, params: {profession}})`.
 - Страницы, кроме первой, грузятся лениво: `component: () => import('@/pages/…')`.
 
-## 3D-пациенты
+## Пациенты
 
-- Модели — CC0 от Quaternius в `public/models/*.glb`; каждая записана в [`CREDITS.md`](../../frontend/CREDITS.md).
-- Показ — `components/Patients/PatientModel.vue` на `<model-viewer>`; модуль подгружается лениво (`await import('@google/model-viewer')`), отдельным чанком.
-- Анимации берутся по имени из файла модели (`Idle`, `Idle_2_HeadLow`, `Idle_HitReact_*`). Посмотреть список: `document.querySelector('model-viewer').availableAnimations`.
-- `<model-viewer>` объявлен веб-компонентом в `vite.config.js` (`isCustomElement`).
+- 2D-иллюстрации — inline SVG в `components/Patients/PatientArt.vue`: мопс, свинья, кот; анимации на CSS, отключаются при `prefers-reduced-motion`.
+- Вид животного — `patient.kind`, у стада — `patient.herd` с болезнью каждого поросёнка.
 
 ## Смена
 
 - Контент смены — `core/data/shifts.js`: дела (`activities`) привязаны к комнатам плана (`roomCode`), внутри — шаги `story` / `choice` / `exam` / `checklist`. Новое дело или смена — запись в данных.
-- Пациенты — `core/data/patients.js`: паспорт (вид, дата рождения, владелец, прививки, чем болел), показатели с нормой, модель `.glb` или иконка, пока модели нет. Паспорт открывается в любой момент дела (`PatientPassport`).
+- Пациенты — `core/data/patients.js`: паспорт (вид, дата рождения, владелец, прививки, чем болел), показатели с нормой, вид животного для 2D-иллюстрации, у стада — список поросят. Паспорт открывается в любой момент дела (`PatientPassport`).
 - `exam` — осмотр перед назначением: каждое действие сразу показывает находку, `after` открывает действие после другого («уши горячие» → «измерить температуру»), `reveals` пишет показатели. Находки осмотров и результаты анализов собирает `getPatientChart` в карту пациента.
 - Тексты объяснений описывают последствия, а не оценивают игрока: без «верно/неверно» и «ты ошибся» (проверяет `shifts.test.js`).
 - Подсказки — `hints: {easy, normal}` у каждого шага с решением и у смены; `getHint` выбирает по сложности, на `Hard` подсказок нет. Сложность выбирается перед первой сменой (`ShiftDifficulty`), хранится в `ShiftState.difficulty` и в `difficulty` прогресса; сменить — только начав главу заново.
