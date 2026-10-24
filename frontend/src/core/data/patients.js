@@ -36,7 +36,7 @@ export const patients = Object.freeze({
             breed: 'Мопс',
             sex: 'Кобель',
             birthDate: '2022-03-14',
-            owner: 'Алина',
+            owner: 'Марина',
             vaccinations: [
                 {name: 'Бешенство', date: '2026-04-02'},
                 {name: 'Комплексная: чума, парвовирус, гепатит', date: '2026-04-02'},

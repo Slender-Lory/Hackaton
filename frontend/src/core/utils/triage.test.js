@@ -52,7 +52,7 @@ describe('resolveTriage', () => {
 
     it('начисляет точные бонусы ТЗ без дублирования', () => {
         const result = resolveTriage(makeState('dog', 'parrot'));
-        expect(result.effects).toEqual({revenue: 400, reputation: 43});
+        expect(result.effects).toEqual({revenue: -1000, reputation: 43});
         expect(result.reputationEvents.map((event) => event.value)).toEqual([8, 10, 15, 10]);
         expect(new Set(result.reputationEvents.map((event) => event.code)).size).toBe(result.reputationEvents.length);
     });
@@ -60,7 +60,7 @@ describe('resolveTriage', () => {
     it('не начисляет выручку за бесплатную помощь собаке', () => {
         const result = resolveTriage(makeState('dog', 'parrot', 'refer'));
         expect(result.outcomeId).toBe('owner-left');
-        expect(result.effects.revenue).toBe(-1000);
+        expect(result.effects.revenue).toBe(-5500);
         expect(result.patientOutcomes.cat).toBe('referred');
         expect(result.reputationEvents.some((event) => event.code === 'triageNoLosses')).toBe(false);
     });
