@@ -1,11 +1,13 @@
 /**
  * Минимальный, но гибкий API-клиент.
  *
- * Базовый URL берётся из VITE_API_URL:
+ * Базовый URL берётся из VITE_API_URL — это корень /api backend'а:
  *  - по умолчанию "/api" — относительный путь:
- *      * dev:  запрос /api/... проксирует Vite → http://localhost:8080 (префикс снимается)
- *      * prod: запрос /api/... проксирует nginx → backend (префикс снимается)
- *  - можно задать абсолютный URL (https://api.example.com), если API живёт отдельно.
+ *      * dev:  запрос /api/... проксирует Vite → http://localhost:8080/api/... (путь не меняется)
+ *      * prod: запрос /api/... проксирует nginx → backend (путь не меняется)
+ *  - можно задать абсолютный URL (https://api.example.com/api), если API живёт отдельно.
+ *
+ * Пути в вызовах — относительно /api: api("/v1/players/me") → /api/v1/players/me.
  */
 export const API_BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 

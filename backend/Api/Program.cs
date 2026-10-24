@@ -138,8 +138,13 @@ app.MapControllers();
 
 // ── Эндпоинты ────────────────────────────────────────────────────────
 // Liveness: процесс жив и отвечает.
+// /health — для healthcheck'ов compose и деплоя (напрямую в backend),
+// /api/health — для фронта: он ходит через прокси с префиксом /api.
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = appName }))
    .WithName("Health")
+   .WithTags("ops");
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok", service = appName }))
+   .WithName("ApiHealth")
    .WithTags("ops");
 
 // Readiness: процесс готов принимать трафик.
