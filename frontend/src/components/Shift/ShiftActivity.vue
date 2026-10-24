@@ -32,7 +32,7 @@ const isLastStep = computed(() => stepIndex.value === props.activity.steps.lengt
 const isNextShown = computed(() => isStory.value || isAnswered.value);
 const result = computed(() => (isAnswered.value && !isStory.value ? getStepResult(step.value, answer.value) : null));
 const hasResult = computed(() => Boolean(result.value?.feedback || Object.keys(result.value?.effects ?? {}).length));
-const hint = computed(() => (isStory.value ? null : getHint(step.value.hints, props.state.difficulty)));
+const hint = computed(() => getHint(step.value.hints, props.state.difficulty));
 const variant = computed(() => (isStory.value ? getStoryVariant(step.value, props.state, answer.value) : null));
 const view = computed(() => ({
     title: variant.value?.title ?? step.value.title,

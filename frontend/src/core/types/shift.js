@@ -94,6 +94,7 @@
  * @property {string} text
  * @property {Effects} [effects]
  * @property {StoryVariant[]} [variants]
+ * @property {Hints} [hints] сцена вместо выбора: подсказка объясняет, почему поступили так
  */
 
 /**
@@ -164,12 +165,27 @@
  */
 
 /**
- * Пациент: модель .glb из public/models, пока её нет — иконка.
+ * Болезнь поросёнка: от неё зависят пометки на 2D-иллюстрации.
+ * @typedef {'ulcers' | 'erysipelas' | 'lame' | 'cough' | 'diarrhea'} PigCondition
+ */
+
+/**
+ * Поросёнок из стада: в карточке пациента их листают.
+ * @typedef {object} HerdPig
+ * @property {string} id
+ * @property {string} name
+ * @property {PigCondition} condition
+ * @property {string} label что с ним
+ * @property {string} note что видно при взгляде
+ */
+
+/**
+ * Пациент: 2D-иллюстрация по виду животного. У стада — несколько поросят.
  * @typedef {object} ActivityPatient
  * @property {string} id
  * @property {string} name
  * @property {'dog' | 'cat' | 'bird' | 'pig'} kind
- * @property {string} [model]
+ * @property {HerdPig[]} [herd]
  * @property {boolean} isSick
  * @property {Passport} passport
  * @property {Vital[]} vitals

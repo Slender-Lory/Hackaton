@@ -3,7 +3,7 @@ import {computed} from 'vue';
 import {CalendarDays, Clock, PawPrint} from 'lucide-vue-next';
 
 import GlareCard from '@/components/Ui/Inspira/GlareCard.vue';
-import PatientModel from '@/components/Patients/PatientModel.vue';
+import PatientArt from '@/components/Patients/PatientArt.vue';
 import UiProgress from '@/components/Ui/UiProgress.vue';
 
 const STAT_ICONS = Object.freeze({calendar: CalendarDays, clock: Clock, paw: PawPrint});
@@ -37,10 +37,11 @@ const cardStyle = computed(() => ({'--accent': `var(--profession-${props.profess
                 v-if="profession.patient"
                 class="profession-card__art"
             >
-                <PatientModel
-                    :src="profession.patient.model"
+                <PatientArt
+                    :kind="profession.patient.kind"
                     :alt="`Пациент ${profession.patient.name}`"
                     :is-sick="isPatientSick"
+                    :is-interactive="false"
                 />
                 <span class="profession-card__patient">{{ profession.patient.name }}</span>
             </div>
