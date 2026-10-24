@@ -15,7 +15,8 @@ describe('professions', () => {
 
         expect(patientCount).toBe(5);
         expect(patients.pigs.passport.species).toContain('40 голов');
-        expect(vet.stats.find((stat) => stat.icon === 'paw').value).toBe(`${patientCount} + 40 поросят`);
+        expect(vet.stats.find((stat) => stat.icon === 'paw').value).toBe(String(patientCount));
+        expect(vet.tagline).toContain(`${patientCount} пациентов и стадо из 40 поросят`);
         expect(vet.stats.find((stat) => stat.icon === 'clock').value).toBe('15–20 мин');
     });
     it('коды уникальны', () => {

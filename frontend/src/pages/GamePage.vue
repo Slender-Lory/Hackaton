@@ -123,7 +123,7 @@ function handleReset() {
         >
             <TriageActivity
                 v-if="activeActivity.kind === 'triage'"
-                :key="activeActivity.code"
+                :key="`triage-${activeActivity.code}`"
                 :state="getAnswers(activeActivity.code).triage ?? null"
                 :scenario-id="`vet-shift-${shift.number}-${activeActivity.code}`"
                 :counters="counters"
@@ -133,7 +133,7 @@ function handleReset() {
             />
             <ShiftActivity
                 v-else
-                :key="activeActivity.code"
+                :key="`shift-${activeActivity.code}`"
                 :activity="activeActivity"
                 :state="state"
                 :nickname="playerStore.nickname"
