@@ -5,7 +5,9 @@ import {
     getLockedOptions,
     getStepResult,
     getStoryVariant,
+    getAvailableExamOptions,
     getUnaffordableOptionIds,
+    meetsConditions,
     pickByConditions,
     startShift,
 } from '@/core/utils/shift';
@@ -16,12 +18,46 @@ const allShifts = Object.values(shifts).flat();
 const allActivities = allShifts.flatMap((shift) => shift.activities.map((activity) => ({shift, activity})));
 
 describe('shifts', () => {
-    it('каждое дело стоит в комнате, открытой на этой смене', () => {
-        allActivities.forEach(({shift, activity}) => {
-            const room = clinicRooms.find((item) => item.code === activity.roomCode);
+    it('каждое дело стоит в существующей комнате, и в смене одно дело на комнату', () => {
+        allShifts.forEach((shift) => {
+            const roomCodes = shift.activities.map((activity) => activity.roomCode);
 
-            expect(room?.unlockShift).toBeLessThanOrEqual(shift.number);
+            expect(new Set(roomCodes).size).toBe(roomCodes.length);
+            roomCodes.forEach((code) => expect(clinicRooms.map((room) => room.code)).toContain(code));
         });
+    });
+
+    it('на каждом шаге с решением есть подсказки для лёгкой и обычной сложности', () => {
+        allActivities
+            .flatMap(({activity}) => activity.steps)
+            .filter((step) => step.kind !== 'story')
+            .forEach((step) => {
+                expect(step.hints?.easy, step.id).toBeTruthy();
+                expect(step.hints?.normal, step.id).toBeTruthy();
+            });
+        allShifts.forEach((shift) => expect(shift.hints?.easy).toBeTruthy());
+    });
+
+    it('объяснения описывают последствия, а не оценивают игрока', () => {
+        const texts = allActivities
+            .flatMap(({activity}) => activity.steps)
+            .flatMap((step) => [
+                ...(step.options ?? []).map((option) => option.feedback ?? ''),
+                ...Object.values(step.feedback ?? {}),
+            ]);
+
+        texts.forEach((text) => expect(text).not.toMatch(/(^|[^а-яё])(не)?верно|ошиб|ты пропустил/i));
+    });
+
+    it('действия осмотра открываются после существующих действий', () => {
+        allActivities
+            .flatMap(({activity}) => activity.steps)
+            .filter((step) => step.kind === 'exam')
+            .forEach((step) => {
+                const ids = step.options.map((option) => option.id);
+
+                step.options.flatMap((option) => option.after ?? []).forEach((id) => expect(ids).toContain(id));
+            });
     });
 
     it('коды дел и шагов внутри дела уникальны', () => {
@@ -74,6 +110,8 @@ function getAllConditions() {
         ...Object.values(chapterEndings)
             .flat()
             .flatMap((ending) => ending.when ?? []),
+        ...clinicRooms.flatMap((room) => room.unlock ?? []),
+        ...allActivities.flatMap(({activity}) => activity.requires ?? []),
     ];
 }
 
@@ -84,8 +122,9 @@ function getAllConditions() {
  */
 function playChapter(pick) {
     const initial = {
-        version: 1,
+        version: 2,
         shift: 0,
+        difficulty: 'Normal',
         counters: {...START_COUNTERS},
         completedActivities: [],
         answers: {},
@@ -95,25 +134,28 @@ function playChapter(pick) {
     return shifts.vet.reduce((chapterState, shift) => {
         const shiftState = startShift(chapterState, shift);
 
-        return shift.activities.reduce(
-            (activityState, activity) =>
-                activity.steps.reduce((state, step) => {
-                    const answer =
-                        step.kind === 'story'
-                            ? (getStoryVariant(step, state, null)?.id ?? STORY_ANSWER)
-                            : pick(step, state);
+        return shift.activities.reduce((activityState, activity) => {
+            const room = clinicRooms.find((item) => item.code === activity.roomCode);
 
-                    return {
-                        ...state,
-                        counters: applyEffects(state.counters, getStepResult(step, answer).effects),
-                        answers: {
-                            ...state.answers,
-                            [activity.code]: {...state.answers[activity.code], [step.id]: answer},
-                        },
-                    };
-                }, activityState),
-            shiftState,
-        );
+            expect(meetsConditions(room.unlock, activityState), `${activity.code}: комната`).toBe(true);
+            expect(meetsConditions(activity.requires, activityState), `${activity.code}: условия`).toBe(true);
+
+            return activity.steps.reduce((state, step) => {
+                const answer =
+                    step.kind === 'story'
+                        ? (getStoryVariant(step, state, null)?.id ?? STORY_ANSWER)
+                        : pick(step, state);
+
+                return {
+                    ...state,
+                    counters: applyEffects(state.counters, getStepResult(step, answer).effects),
+                    answers: {
+                        ...state.answers,
+                        [activity.code]: {...state.answers[activity.code], [step.id]: answer},
+                    },
+                };
+            }, activityState);
+        }, shiftState);
     }, initial);
 }
 
@@ -129,6 +171,10 @@ function pickBy(direction) {
                 : [step.options.find((option) => !option.isNeeded).id];
         }
 
+        if (step.kind === 'exam') {
+            return direction > 0 ? examEverything(step) : [getAvailableExamOptions(step, [])[0].id];
+        }
+
         const closedIds = [
             ...Object.keys(getLockedOptions(step.options, state)),
             ...getUnaffordableOptionIds(step.options, state.counters.revenue),
@@ -139,6 +185,26 @@ function pickBy(direction) {
             .filter((option) => !closedIds.includes(option.id))
             .reduce((best, option) => (score(option) > score(best) ? option : best)).id;
     };
+}
+
+/**
+ * @param {import('@/core/types/shift').ExamStep} step
+ * @returns {string[]}
+ */
+function examEverything(step) {
+    let picked = [];
+
+    while (picked.length < step.options.length) {
+        const next = getAvailableExamOptions(step, picked).find((option) => !picked.includes(option.id));
+
+        if (!next) {
+            return picked;
+        }
+
+        picked = [...picked, next.id];
+    }
+
+    return picked;
 }
 
 describe('сюжет главы', () => {
@@ -156,8 +222,8 @@ describe('сюжет главы', () => {
                     (item) => item.activity.code === answer.activity && item.step.id === answer.step,
                 )?.step;
 
-                expect(step).toBeDefined();
-                expect(getAnswerIds(step)).toEqual(expect.arrayContaining(answer.is));
+                expect(step, `${answer.activity}/${answer.step}`).toBeDefined();
+                expect(getAnswerIds(step)).toEqual(expect.arrayContaining(answer.is ?? []));
             });
     });
 
@@ -171,6 +237,7 @@ describe('сюжет главы', () => {
         const state = playChapter(pickBy(1));
 
         expect(state.answers['farm-visit-3'].outcome).toBe('saved');
+        expect(state.answers['ward-parrot-2'].outcome).toBe('saved');
         expect(['best-clinic', 'farm-saved']).toContain(pickByConditions(chapterEndings.vet, state)?.id);
     });
 

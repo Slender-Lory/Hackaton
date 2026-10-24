@@ -8,7 +8,13 @@ import {clearGuest, getGuest, saveGuestProgress, startGuest} from '@/core/helper
 /** @typedef {import('@/core/types/player').Progress} Progress */
 /** @typedef {import('@/core/types/player').Guest} Guest */
 /** @typedef {import('@/core/types/player').AuthResult} AuthResult */
-/** @typedef {{level: number, percent: number, state: Record<string, unknown> | null}} GameProgress */
+/**
+ * @typedef {object} GameProgress
+ * @property {number} level
+ * @property {number} percent
+ * @property {Record<string, unknown> | null} state
+ * @property {import('@/core/types/player').Difficulty} [difficulty]
+ */
 
 /** @type {Readonly<GameProgress>} */
 const EMPTY_PROGRESS = Object.freeze({level: 0, percent: 0, state: null});
@@ -179,9 +185,9 @@ export const usePlayerStore = defineStore('player', () => {
      * @param {string} professionCode
      * @param {GameProgress} progress
      */
-    async function writeProgress(professionCode, {level, percent, state}) {
+    async function writeProgress(professionCode, {level, percent, state, difficulty}) {
         if (!isAccount.value) {
-            saveGuestProgress(professionCode, {level, percent, difficulty: DIFFICULTIES.normal, state});
+            saveGuestProgress(professionCode, {level, percent, difficulty: difficulty ?? DIFFICULTIES.normal, state});
             guest.value = getGuest();
 
             return;
@@ -194,7 +200,7 @@ export const usePlayerStore = defineStore('player', () => {
                 await playersApi.saveProgress(professionCode, {
                     level,
                     percent,
-                    difficulty: current?.difficulty ?? DIFFICULTIES.normal,
+                    difficulty: difficulty ?? current?.difficulty ?? DIFFICULTIES.normal,
                     state,
                     expectedRevision: current?.revision ?? 0,
                 }),

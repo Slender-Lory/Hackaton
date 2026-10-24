@@ -1,7 +1,8 @@
 import {storeToRefs} from 'pinia';
 import {computed, ref, watch} from 'vue';
 import {isApiError} from '@/core/api/players';
-import {ERROR_CODES, SHIFT_COUNT} from '@/core/constants';
+import {DIFFICULTIES, ERROR_CODES, SHIFT_COUNT} from '@/core/constants';
+import {clinicRooms} from '@/core/data/clinic';
 import {START_COUNTERS, chapterEndings, shifts} from '@/core/data/shifts';
 import {getErrorMessage} from '@/core/helpers/getErrorMessage';
 import {usePlayerStore} from '@/core/stores/player';
@@ -9,8 +10,11 @@ import {useToastStore} from '@/core/stores/toast';
 import {
     applyEffects,
     getChapterPercent,
+    getHint,
+    getPatientChart,
     getStepResult,
     isActivityFinished,
+    meetsConditions,
     pickByConditions,
     startShift,
 } from '@/core/utils/shift';
@@ -20,8 +24,11 @@ import {
 /** @typedef {import('@/core/types/shift').StepAnswer} StepAnswer */
 /** @typedef {import('@/core/types/shift').ActivityAnswers} ActivityAnswers */
 /** @typedef {import('@/core/types/shift').Shift} Shift */
+/** @typedef {import('@/core/types/shift').ShiftActivity} ShiftActivity */
+/** @typedef {import('@/core/types/player').Difficulty} Difficulty */
+/** @typedef {'new' | 'started' | 'done' | 'locked'} ActivityStatus */
 
-const SHIFT_STATE_VERSION = 1;
+const SHIFT_STATE_VERSION = 2;
 const FIRST_SHIFT = 1;
 const CONFLICT_MESSAGE = 'Игра открыта в другой вкладке: продолжаем с её сохранения';
 
@@ -33,6 +40,7 @@ function createShiftState(chapter) {
     const state = {
         version: SHIFT_STATE_VERSION,
         shift: FIRST_SHIFT,
+        difficulty: null,
         counters: {...START_COUNTERS},
         completedActivities: [],
         answers: {},
@@ -49,15 +57,6 @@ function createShiftState(chapter) {
  */
 function isShiftState(value) {
     return value?.version === SHIFT_STATE_VERSION;
-}
-
-/**
- * Сохранения первой смены были без morning.
- * @param {ShiftState} state
- * @returns {ShiftState}
- */
-function normalizeShiftState(state) {
-    return {...state, morning: state.morning ?? {}};
 }
 
 /** @param {import('vue').Ref<string>} professionCode */
@@ -83,7 +82,7 @@ export function useShift(professionCode) {
     );
     const activityStatuses = computed(() =>
         Object.fromEntries(
-            (shift.value?.activities ?? []).map((activity) => [activity.code, getActivityStatus(activity.code)]),
+            (shift.value?.activities ?? []).map((activity) => [activity.code, getActivityStatus(activity)]),
         ),
     );
     const isShiftFinished = computed(
@@ -104,6 +103,19 @@ export function useShift(professionCode) {
     const hasProgress = computed(
         () => (state.value?.shift ?? FIRST_SHIFT) > FIRST_SHIFT || Object.keys(state.value?.answers ?? {}).length > 0,
     );
+    const difficulty = computed(() => state.value?.difficulty ?? DIFFICULTIES.normal);
+    const needsDifficulty = computed(() => Boolean(state.value) && !state.value.difficulty && !hasProgress.value);
+    const shiftHint = computed(() => getHint(shift.value?.hints, difficulty.value));
+    const openRoomCodes = computed(() =>
+        state.value
+            ? clinicRooms.filter((room) => meetsConditions(room.unlock, state.value)).map((room) => room.code)
+            : [],
+    );
+    const activeChart = computed(() =>
+        state.value && activeActivity.value
+            ? getPatientChart(chapter.value, state.value, activeActivity.value.patient.id)
+            : {findings: [], readings: {}},
+    );
 
     watch([isRestored, professionCode], loadState, {immediate: true});
 
@@ -113,7 +125,7 @@ export function useShift(professionCode) {
         }
 
         const saved = playerStore.getProgressState(professionCode.value);
-        state.value = isShiftState(saved) ? normalizeShiftState(saved) : createShiftState(chapter.value);
+        state.value = isShiftState(saved) ? saved : createShiftState(chapter.value);
     }
 
     function restart() {
@@ -130,20 +142,38 @@ export function useShift(professionCode) {
     }
 
     /**
-     * @param {string} activityCode
-     * @returns {'new' | 'started' | 'done'}
+     * @param {ShiftActivity} activity
+     * @returns {ActivityStatus}
      */
-    function getActivityStatus(activityCode) {
-        if (completedActivities.value.includes(activityCode)) {
+    function getActivityStatus(activity) {
+        if (completedActivities.value.includes(activity.code)) {
             return 'done';
         }
 
-        return Object.keys(getAnswers(activityCode)).length ? 'started' : 'new';
+        if (!state.value || !meetsConditions(activity.requires, state.value)) {
+            return 'locked';
+        }
+
+        return Object.keys(getAnswers(activity.code)).length ? 'started' : 'new';
     }
 
     /** @param {string} activityCode */
     function openActivity(activityCode) {
-        activeActivityCode.value = activityCode;
+        const activity = shift.value?.activities.find((item) => item.code === activityCode);
+
+        if (activity && getActivityStatus(activity) !== 'locked') {
+            activeActivityCode.value = activityCode;
+        }
+    }
+
+    /** @param {Difficulty} value */
+    function chooseDifficulty(value) {
+        if (!state.value) {
+            return;
+        }
+
+        state.value = {...state.value, difficulty: value};
+        persist();
     }
 
     function closeActivity() {
@@ -201,6 +231,7 @@ export function useShift(professionCode) {
                     activityCount: activities.length,
                     shiftCount: SHIFT_COUNT,
                 }),
+                difficulty: snapshot.difficulty ?? DIFFICULTIES.normal,
                 state: snapshot,
             });
         } catch (error) {
@@ -229,11 +260,17 @@ export function useShift(professionCode) {
         morningEvents,
         chapterEnding,
         hasProgress,
+        difficulty,
+        needsDifficulty,
+        shiftHint,
+        openRoomCodes,
+        activeChart,
         getAnswers,
         openActivity,
         closeActivity,
         answerStep,
         startNextShift,
+        chooseDifficulty,
         restart,
     };
 }

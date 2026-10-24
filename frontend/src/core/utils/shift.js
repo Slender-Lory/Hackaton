@@ -11,8 +11,17 @@
 /** @typedef {import('@/core/types/shift').StoryVariant} StoryVariant */
 /** @typedef {import('@/core/types/shift').Shift} Shift */
 /** @typedef {import('@/core/types/shift').ShiftState} ShiftState */
+/** @typedef {import('@/core/types/shift').Hints} Hints */
+/** @typedef {import('@/core/types/shift').ExamStep} ExamStep */
+/** @typedef {import('@/core/types/shift').ExamOption} ExamOption */
+/** @typedef {import('@/core/types/shift').PatientChart} PatientChart */
+/** @typedef {import('@/core/types/player').Difficulty} Difficulty */
 
 const PERCENT_MAX = 100;
+const DEFAULT_DIFFICULTY = 'Normal';
+
+/** @type {Readonly<Partial<Record<Difficulty, keyof Hints>>>} */
+const HINT_LEVELS = Object.freeze({Easy: 'easy', Normal: 'normal'});
 
 /** @type {Readonly<Record<keyof Counters, {min: number, max: number}>>} */
 const COUNTER_LIMITS = Object.freeze({
@@ -119,6 +128,13 @@ export function getStepResult(step, answer) {
         return {effects: option?.effects ?? {}, feedback: option?.feedback ?? ''};
     }
 
+    if (step.kind === 'exam') {
+        const pickedIds = Array.isArray(answer) ? answer : [];
+        const picked = step.options.filter((option) => pickedIds.includes(option.id));
+
+        return {effects: mergeEffects(...picked.map((option) => option.effects ?? {})), feedback: ''};
+    }
+
     if (step.variants) {
         const variant = step.variants.find((item) => item.id === answer);
 
@@ -143,9 +159,14 @@ function meetsCondition({counter, min = -Infinity, max = Infinity, answer}, stat
     }
 
     const given = state.answers[answer.activity]?.[answer.step];
+
+    if (given === undefined) {
+        return false;
+    }
+
     const givenIds = Array.isArray(given) ? given : [given];
 
-    return givenIds.some((id) => answer.is.includes(id));
+    return !answer.is || givenIds.some((id) => answer.is.includes(id));
 }
 
 /**
@@ -262,4 +283,64 @@ export function getChapterPercent({shiftNumber, completedCount, activityCount, s
     const shiftShare = activityCount ? completedCount / activityCount : 0;
 
     return Math.round(((shiftNumber - 1 + shiftShare) / shiftCount) * PERCENT_MAX);
+}
+
+/**
+ * Подсказка под сложность. На сложной подсказок нет.
+ * @param {Hints | undefined} hints
+ * @param {Difficulty | null} difficulty
+ * @returns {string | null}
+ */
+export function getHint(hints, difficulty) {
+    const level = HINT_LEVELS[difficulty ?? DEFAULT_DIFFICULTY];
+
+    return level ? (hints?.[level] ?? null) : null;
+}
+
+/**
+ * Действия осмотра, доступные сейчас: те, что открываются после других, ждут своей очереди.
+ * @param {ExamStep} step
+ * @param {readonly string[]} pickedIds
+ * @returns {ExamOption[]}
+ */
+export function getAvailableExamOptions(step, pickedIds) {
+    return step.options.filter((option) => (option.after ?? []).every((id) => pickedIds.includes(id)));
+}
+
+/**
+ * Карта пациента из ответов главы: находки осмотров и результаты анализов по порядку, последние измерения.
+ * @param {readonly Shift[]} chapter
+ * @param {ShiftState} state
+ * @param {string} patientId
+ * @returns {PatientChart}
+ */
+export function getPatientChart(chapter, state, patientId) {
+    const entries = chapter
+        .flatMap((shift) => shift.activities)
+        .filter((activity) => activity.patient.id === patientId)
+        .flatMap((activity) =>
+            activity.steps
+                .filter((step) => step.kind === 'exam' || step.kind === 'checklist')
+                .flatMap((step) => {
+                    const answer = state.answers[activity.code]?.[step.id];
+                    const pickedIds = Array.isArray(answer) ? answer : [];
+
+                    return pickedIds
+                        .map((id) => step.options.find((option) => option.id === id))
+                        .filter((option) => option?.finding)
+                        .map((option) => ({activity, step, option}));
+                }),
+        );
+
+    return {
+        findings: entries.map(({activity, step, option}) => ({
+            id: `${activity.code}/${step.id}/${option.id}`,
+            source: step.title,
+            label: option.label,
+            text: option.finding,
+        })),
+        readings: Object.fromEntries(
+            entries.flatMap(({option}) => (option.reveals ?? []).map((reading) => [reading.vital, reading])),
+        ),
+    };
 }
