@@ -37,15 +37,16 @@ frontend/
     │   ├── Professions/  #   колода: ProfessionsPicker, ProfessionCard, ProfessionCardBack
     │   ├── Patients/     #   3D-пациенты: PatientModel
     │   ├── Clinic/       #   план клиники
+    │   ├── Shift/        #   смена: счётчики, шаги дела (сцена, выбор, обследование), финал
     │   ├── Forms/        #   формы входа
     │   └── toast/        #   всплывающие уведомления
-    ├── composables/      # логика компонентов: useStartGame, useNicknameForm, useAuthForm, useStoryScenes
+    ├── composables/      # логика компонентов: useStartGame, useNicknameForm, useAuthForm, useStoryScenes, useShift
     ├── core/             # всё без разметки
     │   ├── api/          #   http-клиент и запросы к backend'у — единственное место с сетью
     │   ├── constants/    #   значения, нужные в ≥2 местах: ROUTE_NAMES, лимиты, коды ошибок
-    │   ├── data/         #   статический контент: профессии, пролог, план клиники
+    │   ├── data/         #   статический контент: профессии, пролог, план клиники, смены, репутация
     │   ├── helpers/      #   функции с побочными эффектами: хранилища, разбор ошибок
-    │   ├── utils/        #   чистые функции: валидация
+    │   ├── utils/        #   чистые функции: валидация, расчёт счётчиков смены, форматирование
     │   ├── stores/       #   Pinia: player, authDialog, toast
     │   └── types/        #   модели в JSDoc — зеркало контрактов backend'а
     └── assets/styles/    # vars, mixins, shared-resources, animations, global, tailwind
@@ -82,11 +83,11 @@ core/utils, core/constants, core/data, core/types → ничего из прил
 
 ## Состояние (Pinia)
 
-| Store        | Что хранит                                                                            |
-| ------------ | ------------------------------------------------------------------------------------- |
-| `player`     | аккаунт или гость, прогресс по профессиям, вход/регистрация/выход, `getPercent(code)` |
-| `authDialog` | открыто ли окно входа и в каком режиме (`AUTH_MODES`)                                 |
-| `toast`      | очередь всплывающих уведомлений (`show`, `removeToast`)                               |
+| Store        | Что хранит                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `player`     | аккаунт или гость, прогресс по профессиям, вход/регистрация/выход, `getPercent(code)`, `getProgressState`/`saveProgress` |
+| `authDialog` | открыто ли окно входа и в каком режиме (`AUTH_MODES`)                                                                    |
+| `toast`      | очередь всплывающих уведомлений (`show`, `removeToast`)                                                                  |
 
 Состояние формы живёт в composable (`useNicknameForm`, `useAuthForm`), не в Pinia.
 
@@ -116,6 +117,13 @@ core/utils, core/constants, core/data, core/types → ничего из прил
 - Показ — `components/Patients/PatientModel.vue` на `<model-viewer>`; модуль подгружается лениво (`await import('@google/model-viewer')`), отдельным чанком.
 - Анимации берутся по имени из файла модели (`Idle`, `Idle_2_HeadLow`, `Idle_HitReact_*`). Посмотреть список: `document.querySelector('model-viewer').availableAnimations`.
 - `<model-viewer>` объявлен веб-компонентом в `vite.config.js` (`isCustomElement`).
+
+## Смена
+
+- Контент смены — `core/data/shifts.js`: дела (`activities`) привязаны к комнатам плана (`roomCode`), внутри — шаги `story` / `choice` / `checklist`. Новое дело или смена — запись в данных.
+- Расчёт последствий — чистые функции `core/utils/shift.js` (`getStepResult`, `applyEffects`, `getChapterPercent`).
+- `useShift` держит `ShiftState` (`core/types/shift.js`) и после каждого ответа сохраняет его через `playerStore.saveProgress`: гость — в `localStorage`, аккаунт — `PUT /players/me/progress/vet`. Сохранения идут по очереди; на `409 ProgressConflict` состояние перечитывается с сервера.
+- Ответ на шаг пишется сразу, поэтому перезагрузка не даёт переиграть выбор, а дело продолжается с первого шага без ответа.
 
 ## Tailwind
 
