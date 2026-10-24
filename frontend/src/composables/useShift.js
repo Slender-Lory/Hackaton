@@ -5,6 +5,7 @@ import {DIFFICULTIES, ERROR_CODES, SHIFT_COUNT} from '@/core/constants';
 import {clinicRooms} from '@/core/data/clinic';
 import {START_COUNTERS, chapterEndings, shifts} from '@/core/data/shifts';
 import {getErrorMessage} from '@/core/helpers/getErrorMessage';
+import {getChapterReview} from '@/core/utils/review';
 import {usePlayerStore} from '@/core/stores/player';
 import {useToastStore} from '@/core/stores/toast';
 import {
@@ -100,6 +101,9 @@ export function useShift(professionCode) {
 
         return pickByConditions(chapterEndings[professionCode.value] ?? [], state.value);
     });
+    const chapterReview = computed(() =>
+        chapterEnding.value && state.value ? getChapterReview(chapter.value, state.value) : null,
+    );
     const hasProgress = computed(
         () => (state.value?.shift ?? FIRST_SHIFT) > FIRST_SHIFT || Object.keys(state.value?.answers ?? {}).length > 0,
     );
@@ -295,6 +299,7 @@ export function useShift(professionCode) {
         nextShift,
         morningEvents,
         chapterEnding,
+        chapterReview,
         hasProgress,
         difficulty,
         needsDifficulty,
