@@ -35,7 +35,7 @@ frontend/
     │   │   └── Inspira/  #   порты из Inspira UI (Tailwind внутри)
     │   ├── Header/       #   TheHeader, HeaderPlayer
     │   ├── Professions/  #   колода: ProfessionsPicker, ProfessionCard, ProfessionCardBack
-    │   ├── Patients/     #   3D-пациенты: PatientModel
+    │   ├── Patients/     #   3D-пациенты и паспорт: PatientModel, PatientPassport
     │   ├── Clinic/       #   план клиники
     │   ├── Shift/        #   смена: счётчики, шаги дела (сцена, выбор, обследование), финал
     │   ├── Forms/        #   формы входа
@@ -120,7 +120,12 @@ core/utils, core/constants, core/data, core/types → ничего из прил
 
 ## Смена
 
-- Контент смены — `core/data/shifts.js`: дела (`activities`) привязаны к комнатам плана (`roomCode`), внутри — шаги `story` / `choice` / `checklist`. Новое дело или смена — запись в данных.
+- Контент смены — `core/data/shifts.js`: дела (`activities`) привязаны к комнатам плана (`roomCode`), внутри — шаги `story` / `choice` / `exam` / `checklist`. Новое дело или смена — запись в данных.
+- Пациенты — `core/data/patients.js`: паспорт (вид, дата рождения, владелец, прививки, чем болел), показатели с нормой, модель `.glb` или иконка, пока модели нет. Паспорт открывается в любой момент дела (`PatientPassport`).
+- `exam` — осмотр перед назначением: каждое действие сразу показывает находку, `after` открывает действие после другого («уши горячие» → «измерить температуру»), `reveals` пишет показатели. Находки осмотров и результаты анализов собирает `getPatientChart` в карту пациента.
+- Тексты объяснений описывают последствия, а не оценивают игрока: без «верно/неверно» и «ты ошибся» (проверяет `shifts.test.js`).
+- Подсказки — `hints: {easy, normal}` у каждого шага с решением и у смены; `getHint` выбирает по сложности, на `Hard` подсказок нет. Сложность выбирается перед первой сменой (`ShiftDifficulty`), хранится в `ShiftState.difficulty` и в `difficulty` прогресса; сменить — только начав главу заново.
+- Комнаты открываются по ходу главы: `unlock` у комнаты в `core/data/clinic.js`, `requires` у дела — пока условия не выполнены, дело ждёт с причиной `lockedText`.
 - Расчёт последствий — чистые функции `core/utils/shift.js` (`getStepResult`, `applyEffects`, `getChapterPercent`).
 - `useShift` держит `ShiftState` (`core/types/shift.js`) и после каждого ответа сохраняет его через `playerStore.saveProgress`: гость — в `localStorage`, аккаунт — `PUT /players/me/progress/vet`. Сохранения идут по очереди; на `409 ProgressConflict` состояние перечитывается с сервера.
 - Ответ на шаг пишется сразу, поэтому перезагрузка не даёт переиграть выбор, а дело продолжается с первого шага без ответа.

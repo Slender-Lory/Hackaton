@@ -2,9 +2,12 @@ import {describe, expect, it} from 'vitest';
 import {
     applyEffects,
     getChapterPercent,
+    getAvailableExamOptions,
     getChecklistBudget,
+    getHint,
     getLockedOptions,
     getOpenStepIndex,
+    getPatientChart,
     getStepResult,
     getStoryVariant,
     getUnaffordableOptionIds,
@@ -203,5 +206,77 @@ describe('startShift', () => {
         expect(next.shift).toBe(2);
         expect(next.counters).toEqual({revenue: 1000, reputation: 40, pigHealth: 55});
         expect(next.morning).toEqual({2: ['always', 'quarantine']});
+    });
+});
+
+describe('условие «на шаг ответили»', () => {
+    it('выполнено при любом ответе и не выполнено без ответа', () => {
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'exam'}}], STATE)).toBe(true);
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'diagnosis'}}], STATE)).toBe(false);
+    });
+});
+
+describe('getHint', () => {
+    const hints = {easy: 'подробно', normal: 'намёк'};
+
+    it('подробная на лёгкой, намёк на обычной, ничего на сложной', () => {
+        expect(getHint(hints, 'Easy')).toBe('подробно');
+        expect(getHint(hints, 'Normal')).toBe('намёк');
+        expect(getHint(hints, 'Hard')).toBeNull();
+    });
+
+    it('без выбранной сложности — как на обычной', () => {
+        expect(getHint(hints, null)).toBe('намёк');
+    });
+});
+
+/** @type {import('@/core/types/shift').ExamStep} */
+const EXAM = {
+    kind: 'exam',
+    id: 'exam',
+    title: 'Осмотр',
+    text: '',
+    hints: {easy: '', normal: ''},
+    options: [
+        {id: 'ears', label: 'Уши', finding: 'Уши горячие'},
+        {
+            id: 'temperature',
+            label: 'Температура',
+            after: ['ears'],
+            finding: 'Жар',
+            reveals: [{vital: 'temperature', value: '39,9 °C', isAbnormal: true}],
+            effects: {revenue: -100},
+        },
+    ],
+};
+
+describe('getAvailableExamOptions', () => {
+    it('открывает следующее действие только после нужной находки', () => {
+        expect(getAvailableExamOptions(EXAM, []).map((option) => option.id)).toEqual(['ears']);
+        expect(getAvailableExamOptions(EXAM, ['ears']).map((option) => option.id)).toEqual(['ears', 'temperature']);
+    });
+
+    it('осмотр складывает эффекты выбранных действий', () => {
+        expect(getStepResult(EXAM, ['ears', 'temperature']).effects).toEqual({revenue: -100});
+    });
+});
+
+describe('getPatientChart', () => {
+    it('собирает находки и измерения пациента из ответов', () => {
+        const chapter = [
+            {
+                number: 1,
+                activities: [
+                    {code: 'cat', title: 'Приём', patient: {id: 'cat'}, steps: [EXAM]},
+                    {code: 'dog', title: 'Приём', patient: {id: 'dog'}, steps: [{...EXAM}]},
+                ],
+            },
+        ];
+        const state = {...STATE, answers: {cat: {exam: ['ears', 'temperature']}, dog: {exam: ['ears']}}};
+
+        const chart = getPatientChart(chapter, state, 'cat');
+
+        expect(chart.findings.map((finding) => finding.text)).toEqual(['Уши горячие', 'Жар']);
+        expect(chart.readings.temperature.value).toBe('39,9 °C');
     });
 });

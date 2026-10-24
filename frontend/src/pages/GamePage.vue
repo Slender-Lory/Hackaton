@@ -10,13 +10,17 @@ import {useToastStore} from '@/core/stores/toast';
 import {useShift} from '@/composables/useShift';
 
 import ClinicPlan from '@/components/Clinic/ClinicPlan.vue';
+import PatientPassport from '@/components/Patients/PatientPassport.vue';
 import ProfessionCard from '@/components/Professions/ProfessionCard.vue';
 import ResetProgressForm from '@/components/Forms/ResetProgressForm.vue';
 import ShiftActivity from '@/components/Shift/ShiftActivity.vue';
 import ShiftCounters from '@/components/Shift/ShiftCounters.vue';
+import ShiftDifficulty from '@/components/Shift/ShiftDifficulty.vue';
 import ShiftFinale from '@/components/Shift/ShiftFinale.vue';
 import ShiftMorning from '@/components/Shift/ShiftMorning.vue';
 import ShiftPatientCard from '@/components/Shift/ShiftPatientCard.vue';
+
+const PLAN_NOTE = 'Выбери, с чего начать: подсвеченные комнаты ждут тебя.';
 
 const route = useRoute();
 const router = useRouter();
@@ -37,20 +41,29 @@ const {
     morningEvents,
     chapterEnding,
     hasProgress,
+    needsDifficulty,
+    shiftHint,
+    openRoomCodes,
+    activeChart,
     openActivity,
     closeActivity,
     answerStep,
     startNextShift,
+    chooseDifficulty,
     restart,
 } = useShift(professionCode);
 
 const isResetFormOpen = ref(false);
+const isPassportOpen = ref(false);
 
 const profession = computed(() => professions.find((item) => item.code === professionCode.value));
 
 watch([isRestored, state], leaveIfCannotPlay, {immediate: true});
 
-watch([activeActivity, () => shift.value?.number], () => window.scrollTo({top: 0}));
+watch([activeActivity, () => shift.value?.number], () => {
+    isPassportOpen.value = false;
+    window.scrollTo({top: 0});
+});
 
 function leaveIfCannotPlay() {
     if (!isRestored.value) {
@@ -88,6 +101,7 @@ function handleReset() {
                 :state="state"
                 @answer="answerStep"
                 @close="closeActivity"
+                @passport="isPassportOpen = true"
             >
                 <template #counters>
                     <ShiftCounters :counters="counters" />
@@ -96,6 +110,7 @@ function handleReset() {
             <ShiftPatientCard
                 class="game-page__card"
                 :activity="activeActivity"
+                @passport="isPassportOpen = true"
             />
         </div>
 
@@ -131,12 +146,12 @@ function handleReset() {
                         <h1 class="game-page__title">Смена {{ shift.number }}. {{ shift.title }}</h1>
                         <p class="game-page__lead">{{ shift.lead }}</p>
                     </div>
-                    <ShiftCounters
-                        v-if="!isShiftFinished"
-                        :counters="counters"
+                    <ShiftDifficulty
+                        v-if="needsDifficulty"
+                        @choose="chooseDifficulty"
                     />
                     <ShiftFinale
-                        v-if="isShiftFinished"
+                        v-else-if="isShiftFinished"
                         :shift="shift"
                         :counters="counters"
                         :next-shift="nextShift"
@@ -146,13 +161,14 @@ function handleReset() {
                         @leave="leaveGame"
                     />
                     <template v-else>
+                        <ShiftCounters :counters="counters" />
                         <ShiftMorning
                             v-if="morningEvents.length"
                             :events="morningEvents"
                         />
-                        <p class="game-page__note">Выбери, с чего начать: подсвеченные комнаты ждут тебя.</p>
+                        <p class="game-page__note">{{ shiftHint ?? PLAN_NOTE }}</p>
                         <ClinicPlan
-                            :shift="shift.number"
+                            :open-room-codes="openRoomCodes"
                             :activities="shift.activities"
                             :statuses="activityStatuses"
                             @open="openActivity"
@@ -169,6 +185,12 @@ function handleReset() {
             </div>
         </template>
 
+        <PatientPassport
+            v-if="isPassportOpen && activeActivity"
+            :patient="activeActivity.patient"
+            :chart="activeChart"
+            @close="isPassportOpen = false"
+        />
         <ResetProgressForm
             v-if="isResetFormOpen && profession"
             :profession="profession"

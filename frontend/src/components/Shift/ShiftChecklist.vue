@@ -1,6 +1,6 @@
 <script setup>
 import {computed, ref} from 'vue';
-import {Check, ClipboardCheck, X} from 'lucide-vue-next';
+import {Check, ClipboardCheck} from 'lucide-vue-next';
 import {getChecklistBudget, getChecklistCost} from '@/core/utils/shift';
 import {formatRubles} from '@/core/utils/format';
 
@@ -32,23 +32,10 @@ const options = computed(() =>
             ...option,
             isSelected,
             isOverBudget: !isSelected && spent.value + option.cost > budget.value,
-            verdict: getVerdict(option, isSelected),
+            result: isAnswered.value && isSelected ? (option.finding ?? '') : '',
         };
     }),
 );
-
-/**
- * @param {import('@/core/types/shift').ChecklistOption} option
- * @param {boolean} isSelected
- * @returns {string}
- */
-function getVerdict(option, isSelected) {
-    if (!isAnswered.value || option.isNeeded === isSelected) {
-        return '';
-    }
-
-    return option.isNeeded ? 'Нужно было' : 'Лишнее';
-}
 
 /** @param {string} optionId */
 function handleToggle(optionId) {
@@ -102,18 +89,14 @@ function handleSubmit() {
                         />
                     </span>
                     <span class="shift-checklist__label">{{ option.label }}</span>
-                    <span
-                        v-if="option.verdict"
-                        class="shift-checklist__verdict"
-                    >
-                        <X
-                            :size="14"
-                            aria-hidden="true"
-                        />
-                        {{ option.verdict }}
-                    </span>
                     <span class="shift-checklist__cost">
                         {{ option.cost ? formatRubles(option.cost) : 'Бесплатно' }}
+                    </span>
+                    <span
+                        v-if="option.result"
+                        class="shift-checklist__result"
+                    >
+                        {{ option.result }}
                     </span>
                 </label>
             </li>
@@ -241,8 +224,14 @@ $box-size: 24px;
         font-weight: $font-weight-semibold;
     }
 
-    &__verdict {
-        @include chip(rgba($color-danger, 18%), $color-danger-text);
+    &__result {
+        flex-basis: 100%;
+        color: $color-ink;
+        font-size: $font-size-sm;
+        line-height: 1.4;
+        border-left: 3px solid $color-accent;
+
+        @include padding('left', 3);
     }
 
     &__cost {

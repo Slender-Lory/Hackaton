@@ -1,12 +1,16 @@
 <script setup>
-import {PawPrint} from 'lucide-vue-next';
+import {Bird, Cat, Dog, IdCard, PawPrint, PiggyBank} from 'lucide-vue-next';
 
 import PatientModel from '@/components/Patients/PatientModel.vue';
+
+const KIND_ICONS = Object.freeze({dog: Dog, cat: Cat, bird: Bird, pig: PiggyBank});
 
 defineProps({
     /** @type {import('vue').PropType<import('@/core/types/shift').ShiftActivity>} */
     activity: {type: Object, required: true},
 });
+
+const emit = defineEmits(['passport']);
 </script>
 
 <template>
@@ -21,13 +25,36 @@ defineProps({
         </header>
         <div class="shift-patient-card__art">
             <PatientModel
+                v-if="activity.patient.model"
                 :key="activity.patient.model"
                 :src="activity.patient.model"
                 :alt="`Пациент ${activity.patient.name}`"
                 :is-sick="activity.patient.isSick"
             />
+            <div
+                v-else
+                class="shift-patient-card__figure"
+            >
+                <component
+                    :is="KIND_ICONS[activity.patient.kind]"
+                    :size="96"
+                    :stroke-width="1.25"
+                    aria-hidden="true"
+                />
+            </div>
         </div>
-        <p class="shift-patient-card__place">{{ activity.place }}</p>
+        <p class="shift-patient-card__place">{{ activity.patient.passport.species }} · {{ activity.place }}</p>
+        <button
+            class="shift-patient-card__passport"
+            type="button"
+            @click="emit('passport')"
+        >
+            <IdCard
+                :size="18"
+                aria-hidden="true"
+            />
+            Открыть паспорт
+        </button>
     </article>
 </template>
 
@@ -61,6 +88,29 @@ defineProps({
         border: 3px solid $color-accent;
         border-radius: $radius-card-inner;
         background-color: $color-card-text-box;
+    }
+
+    &__figure {
+        aspect-ratio: 4 / 3;
+        color: $color-accent;
+
+        @include flex-center;
+    }
+
+    &__passport {
+        justify-content: center;
+        cursor: pointer;
+
+        @include button-reset;
+        @include chip;
+
+        font-size: $font-size-sm;
+
+        @include padding('y', 2);
+
+        @include hover {
+            background-color: $color-white;
+        }
     }
 
     &__place {
