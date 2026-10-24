@@ -64,7 +64,19 @@ const findings = computed(() =>
 function handlePick(optionId) {
     if (!pickedIds.value.includes(optionId)) {
         pickedIds.value = [...pickedIds.value, optionId];
+
+        return;
     }
+
+    let ids = pickedIds.value.filter((id) => id !== optionId);
+    let availableIds = getAvailableExamOptions(props.step, ids).map((option) => option.id);
+
+    while (ids.some((id) => !availableIds.includes(id))) {
+        ids = ids.filter((id) => availableIds.includes(id));
+        availableIds = getAvailableExamOptions(props.step, ids).map((option) => option.id);
+    }
+
+    pickedIds.value = ids;
 }
 
 function handleFinish() {
@@ -80,7 +92,7 @@ function handleFinish() {
                 :key="action.id"
                 type="button"
                 :class="['shift-exam__action', {'shift-exam__action--picked': action.isPicked}]"
-                :disabled="isAnswered || action.isPicked"
+                :disabled="isAnswered"
                 :aria-pressed="action.isPicked"
                 @click="handlePick(action.id)"
             >

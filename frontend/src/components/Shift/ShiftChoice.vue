@@ -1,8 +1,10 @@
 <script setup>
-import {computed} from 'vue';
-import {Bone, Grab, Hand, Shield, Shirt} from 'lucide-vue-next';
+import {computed, ref} from 'vue';
+import {Bone, Check, Grab, Hand, Shield, Shirt} from 'lucide-vue-next';
 import {getUnaffordableOptionIds} from '@/core/utils/shift';
 import {formatRubles} from '@/core/utils/format';
+
+import UiButton from '@/components/Ui/UiButton.vue';
 
 const SHORT_OF_MONEY = 'Не хватает денег';
 const ACTION_ICONS = Object.freeze({bone: Bone, hand: Hand, grab: Grab, shield: Shield, towel: Shirt});
@@ -18,6 +20,9 @@ const props = defineProps({
 
 const emit = defineEmits(['answer']);
 
+/** @type {import('vue').Ref<string | null>} */
+const selectedId = ref(null);
+
 const isAnswered = computed(() => props.answer !== null);
 const isNonVerbal = computed(() => props.step.options.every((option) => option.icon));
 const unaffordableIds = computed(() => getUnaffordableOptionIds(props.step.options, props.revenue));
@@ -30,7 +35,7 @@ const options = computed(() =>
             ...option,
             iconComponent: ACTION_ICONS[option.icon],
             cost: Math.max(0, -(option.effects.revenue ?? 0)),
-            isChosen: option.id === props.answer,
+            isChosen: option.id === (isAnswered.value ? props.answer : selectedId.value),
             lockedText,
             isLocked: Boolean(lockedText),
         };
@@ -39,49 +44,68 @@ const options = computed(() =>
 
 /** @param {string} optionId */
 function handlePick(optionId) {
-    emit('answer', optionId);
+    selectedId.value = selectedId.value === optionId ? null : optionId;
+}
+
+function handleApply() {
+    if (selectedId.value) {
+        emit('answer', selectedId.value);
+    }
 }
 </script>
 
 <template>
-    <div :class="['shift-choice', {'shift-choice--icons': isNonVerbal}]">
-        <button
-            v-for="option in options"
-            :key="option.id"
-            type="button"
-            :class="[
-                'shift-choice__option',
-                {
-                    'shift-choice__option--chosen': option.isChosen,
-                    'shift-choice__option--faded': isAnswered && !option.isChosen,
-                    'shift-choice__option--locked': !isAnswered && option.isLocked,
-                },
-            ]"
-            :disabled="isAnswered || option.isLocked"
-            :aria-pressed="option.isChosen"
-            @click="handlePick(option.id)"
+    <div class="shift-choice">
+        <div :class="['shift-choice__options', {'shift-choice__options--icons': isNonVerbal}]">
+            <button
+                v-for="option in options"
+                :key="option.id"
+                type="button"
+                :class="[
+                    'shift-choice__option',
+                    {
+                        'shift-choice__option--chosen': option.isChosen,
+                        'shift-choice__option--faded': isAnswered && !option.isChosen,
+                        'shift-choice__option--locked': !isAnswered && option.isLocked,
+                    },
+                ]"
+                :disabled="isAnswered || option.isLocked"
+                :aria-pressed="option.isChosen"
+                @click="handlePick(option.id)"
+            >
+                <component
+                    :is="option.iconComponent"
+                    v-if="option.iconComponent"
+                    class="shift-choice__icon"
+                    :size="32"
+                    aria-hidden="true"
+                />
+                <span class="shift-choice__label">{{ option.label }}</span>
+                <span
+                    v-if="!isAnswered && option.isLocked"
+                    class="shift-choice__cost shift-choice__cost--short"
+                >
+                    {{ option.lockedText }}
+                </span>
+                <span
+                    v-else-if="option.cost"
+                    class="shift-choice__cost"
+                >
+                    {{ formatRubles(option.cost) }}
+                </span>
+            </button>
+        </div>
+        <UiButton
+            v-if="!isAnswered"
+            :disabled="!selectedId"
+            @click="handleApply"
         >
-            <component
-                :is="option.iconComponent"
-                v-if="option.iconComponent"
-                class="shift-choice__icon"
-                :size="32"
+            <Check
+                :size="20"
                 aria-hidden="true"
             />
-            <span class="shift-choice__label">{{ option.label }}</span>
-            <span
-                v-if="!isAnswered && option.isLocked"
-                class="shift-choice__cost shift-choice__cost--short"
-            >
-                {{ option.lockedText }}
-            </span>
-            <span
-                v-else-if="option.cost"
-                class="shift-choice__cost"
-            >
-                {{ formatRubles(option.cost) }}
-            </span>
-        </button>
+            Применить
+        </UiButton>
     </div>
 </template>
 
@@ -89,12 +113,19 @@ function handlePick(optionId) {
 .shift-choice {
     $block: &;
 
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: $indent-step * 3;
+    align-items: flex-start;
 
-    &--icons {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    @include column($indent-step * 4);
+
+    &__options {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: $indent-step * 3;
+
+        &--icons {
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        }
     }
 
     &__option {
@@ -127,7 +158,7 @@ function handlePick(optionId) {
             }
         }
 
-        #{$block}--icons & {
+        #{$block}__options--icons & {
             align-items: center;
             justify-content: center;
             text-align: center;
