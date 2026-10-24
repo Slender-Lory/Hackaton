@@ -37,30 +37,30 @@ $radius-button: 14px;
 $radius-card: 18px;
 $radius-card-inner: 10px;
 
-$color-playmat: #2a33c4;
-$color-playmat-deep: #1b2192;
-$color-playmat-light: #4450e6;
-$color-playmat-line: rgba(#b8c0ff, 35%);
+$color-playmat: #2c7f79;
+$color-playmat-deep: #1f625d;
+$color-playmat-light: #4a9b94;
+$color-playmat-line: rgba(#c6ece6, 35%);
 
 $color-white: #ffffff;
 $color-black: #000000;
-$color-ink: #15133d;
-$color-ink-soft: #4a4874;
+$color-ink: #173b3a;
+$color-ink-soft: #4b6b69;
 $color-on-playmat: #ffffff;
-$color-on-playmat-soft: #c9ceff;
+$color-on-playmat-soft: #d3f0eb;
 
-$color-card-face: #fbfaff;
-$color-card-text-box: #f1efff;
-$color-card-back: #6a3cf0;
-$color-card-back-pattern: #8e6bff;
+$color-card-face: #fbfefd;
+$color-card-text-box: #e9f6f3;
+$color-card-back: #5bb5a9;
+$color-card-back-pattern: #84cdc2;
 
-$color-action: #ffd23f;
-$color-action-deep: #e0a800;
-$color-action-light: #ffdd66;
-$color-danger: #ff6b57;
-$color-danger-text: #c8402f;
+$color-action: #ffd36b;
+$color-action-deep: #e3ac2c;
+$color-action-light: #ffe196;
+$color-danger: #f08a7a;
+$color-danger-text: #b4483a;
 
-$color-profession-vet: #19c39a;
+$color-profession-vet: #3fb3a1;
 
 $professions: (
     'vet': $color-profession-vet,
@@ -75,9 +75,9 @@ $color-accent: var(--accent, #{$color-profession-vet});
 $color-overlay: rgba($color-playmat-deep, 72%);
 
 $shadow-card:
-    0 2px 4px rgba(#0a0c3c, 25%),
-    0 18px 40px rgba(#0a0c3c, 45%);
+    0 2px 4px rgba(#0f3b38, 25%),
+    0 18px 40px rgba(#0f3b38, 45%);
 $shadow-card-lifted:
-    0 4px 8px rgba(#0a0c3c, 25%),
-    0 30px 60px rgba(#0a0c3c, 50%);
-$shadow-button: 0 6px 16px rgba(#0a0c3c, 35%);
+    0 4px 8px rgba(#0f3b38, 25%),
+    0 30px 60px rgba(#0f3b38, 50%);
+$shadow-button: 0 6px 16px rgba(#0f3b38, 35%);

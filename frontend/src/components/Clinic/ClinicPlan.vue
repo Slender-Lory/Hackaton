@@ -20,17 +20,42 @@ const emit = defineEmits(['open']);
 
 const toastStore = useToastStore();
 
-const rooms = computed(() =>
-    clinicRooms.map((room) => {
-        const activity = props.activities.find((item) => item.roomCode === room.code) ?? null;
+const ROOM_SLOTS = Object.freeze([
+    '1 / 1 / 3 / 3',
+    '1 / 3 / 3 / 5',
+    '1 / 5 / 3 / 7',
+    '3 / 1 / 5 / 4',
+    '3 / 4 / 5 / 6',
+    '3 / 6 / 5 / 7',
+]);
 
-        return {
-            ...room,
-            activity,
-            isOpen: props.openRoomCodes.includes(room.code),
-            status: activity ? (props.statuses[activity.code] ?? 'new') : null,
-        };
-    }),
+/**
+ * Порядок на плане: сначала комнаты, где ждут игрока, потом открытые остальные, закрытые — в конце.
+ * @param {{isOpen: boolean, status: string | null}} room
+ * @returns {number}
+ */
+function getRoomRank(room) {
+    if (!room.isOpen) {
+        return 2;
+    }
+
+    return room.status === 'new' || room.status === 'started' ? 0 : 1;
+}
+
+const rooms = computed(() =>
+    clinicRooms
+        .map((room) => {
+            const activity = props.activities.find((item) => item.roomCode === room.code) ?? null;
+
+            return {
+                ...room,
+                activity,
+                isOpen: props.openRoomCodes.includes(room.code),
+                status: activity ? (props.statuses[activity.code] ?? 'new') : null,
+            };
+        })
+        .sort((first, second) => getRoomRank(first) - getRoomRank(second))
+        .map((room, index) => ({...room, area: ROOM_SLOTS[index]})),
 );
 
 /** @param {(typeof rooms.value)[number]} room */

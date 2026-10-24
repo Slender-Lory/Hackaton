@@ -6,7 +6,7 @@ export const professions = Object.freeze([
         code: 'vet',
         title: 'Ветеринар',
         kind: 'Медицина и животные',
-        patient: {name: 'Барон', model: '/models/shiba-inu.glb'},
+        patient: {name: 'Барон', kind: 'dog'},
         tagline: 'Три смены, вспышка ящура на свиноферме и пациенты, которые не умеют сказать, где болит.',
         stats: [
             {icon: 'calendar', label: 'Смены', value: '3'},

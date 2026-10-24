@@ -10,7 +10,7 @@
  * Пациент на арте карты: 3D-модель из public/models (источники — CREDITS.md).
  * @typedef {object} ProfessionPatient
  * @property {string} name
- * @property {string} model путь к .glb
+ * @property {'dog' | 'cat' | 'bird' | 'pig'} kind кого рисует 2D-иллюстрация
  */
 
 /**
