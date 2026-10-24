@@ -79,7 +79,7 @@ function handleRoomClick(room) {
     }
 
     if (room.status === 'locked') {
-        toastStore.show(room.activity.lockedText ?? `${room.activity.patient.name} пока ждёт`);
+        toastStore.show(room.activity.lockedText ?? `${room.activity.patient.name}: пока рано`);
 
         return;
     }
@@ -139,7 +139,7 @@ function handleRoomClick(room) {
                     :size="14"
                     aria-hidden="true"
                 />
-                {{ room.activity.patient.name }} ждёт
+                Позже: {{ room.activity.patient.name }}
             </span>
             <span
                 v-else-if="room.activity"

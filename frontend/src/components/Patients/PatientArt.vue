@@ -4,7 +4,7 @@ import {ref} from 'vue';
 const FLINCH_DURATION = 450;
 
 const props = defineProps({
-    /** @type {import('vue').PropType<'dog' | 'pig' | 'cat' | 'bird'>} */
+    /** @type {import('vue').PropType<'dog' | 'pig' | 'cat'>} */
     kind: {type: String, required: true},
     isSick: {type: Boolean, default: false},
     /** @type {import('vue').PropType<import('@/core/types/shift').PigCondition | null>} */
@@ -290,7 +290,7 @@ function handleFlinch() {
                     transform="rotate(-20 182 102)"
                 />
                 <g
-                    v-if="condition === 'erysipelas'"
+                    v-if="condition === 'urticaria'"
                     fill="#d9545e"
                     opacity="0.75"
                 >
@@ -299,15 +299,24 @@ function handleFlinch() {
                     <path d="M196 106 l8 -8 l8 8 l-8 8 Z" />
                     <path d="M150 138 l8 -8 l8 8 l-8 8 Z" />
                 </g>
-                <ellipse
-                    v-if="condition === 'diarrhea'"
-                    cx="222"
-                    cy="134"
-                    rx="10"
-                    ry="16"
-                    fill="#9b7a4e"
+                <g
+                    v-if="condition === 'septic'"
+                    fill="#7b6fb0"
                     opacity="0.55"
-                />
+                >
+                    <ellipse
+                        cx="150"
+                        cy="152"
+                        rx="34"
+                        ry="12"
+                    />
+                    <ellipse
+                        cx="118"
+                        cy="128"
+                        rx="12"
+                        ry="18"
+                    />
+                </g>
             </g>
             <g :class="{'patient-art__lame-leg': condition === 'lame'}">
                 <rect
@@ -354,23 +363,6 @@ function handleFlinch() {
                 d="M138 174 h28 v8 a10 10 0 0 1 -10 10 h-8 a10 10 0 0 1 -10 -10 Z"
                 fill="#9a5c5a"
             />
-            <g
-                v-if="condition === 'ulcers'"
-                fill="#fff4f2"
-                stroke="#d9545e"
-                stroke-width="2"
-            >
-                <circle
-                    cx="112"
-                    cy="182"
-                    r="4"
-                />
-                <circle
-                    cx="152"
-                    cy="182"
-                    r="4"
-                />
-            </g>
             <g class="patient-art__head">
                 <path
                     class="patient-art__ear patient-art__ear--back"
@@ -443,51 +435,27 @@ function handleFlinch() {
                     r="7"
                     fill="#f19c9a"
                 />
-                <g
-                    v-if="condition === 'ulcers'"
-                    fill="#fff4f2"
-                    stroke="#d9545e"
-                    stroke-width="2"
-                >
-                    <circle
-                        cx="80"
-                        cy="102"
-                        r="4"
-                    />
-                    <circle
-                        cx="112"
-                        cy="118"
-                        r="3.5"
-                    />
-                    <circle
-                        cx="96"
-                        cy="126"
-                        r="3"
-                    />
-                </g>
             </g>
             <g
-                v-if="condition === 'cough'"
-                class="patient-art__puffs"
-                fill="#ffffff"
+                v-if="condition === 'fever'"
+                stroke="#f08a7a"
+                stroke-width="4"
+                stroke-linecap="round"
+                fill="none"
             >
-                <circle
+                <path
                     class="patient-art__puff"
-                    cx="46"
-                    cy="114"
-                    r="8"
+                    d="M70 28 q6 -6 0 -12 q-6 -6 0 -12"
                 />
-                <circle
+                <path
                     class="patient-art__puff patient-art__puff--late"
-                    cx="34"
-                    cy="102"
-                    r="6"
+                    d="M96 22 q6 -6 0 -12 q-6 -6 0 -12"
                 />
             </g>
         </svg>
 
         <svg
-            v-else-if="kind === 'cat'"
+            v-else
             class="patient-art__svg"
             viewBox="0 0 260 200"
             aria-hidden="true"
@@ -621,86 +589,6 @@ function handleFlinch() {
                 />
             </g>
         </svg>
-
-        <svg
-            v-else
-            class="patient-art__svg"
-            viewBox="0 0 260 200"
-            aria-hidden="true"
-        >
-            <rect
-                x="40"
-                y="168"
-                width="180"
-                height="10"
-                rx="5"
-                fill="#b88a5a"
-            />
-            <path
-                class="patient-art__tail"
-                d="M146 150 L176 196 L160 196 L138 156 Z"
-                fill="#5aa9d6"
-            />
-            <g class="patient-art__body">
-                <ellipse
-                    cx="132"
-                    cy="120"
-                    rx="40"
-                    ry="50"
-                    fill="#8fd36b"
-                />
-                <path
-                    d="M136 92 q24 10 30 48 q-22 -6 -34 -30 Z"
-                    fill="#6fb84e"
-                />
-                <path
-                    d="M142 104 q10 2 14 10 M144 118 q10 2 14 10"
-                    stroke="#2f5a26"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    fill="none"
-                />
-            </g>
-            <g class="patient-art__head">
-                <circle
-                    cx="122"
-                    cy="68"
-                    r="32"
-                    fill="#f5e27a"
-                />
-                <path
-                    d="M104 52 q8 -4 16 0 M110 42 q8 -4 16 0"
-                    stroke="#2f2a1a"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    fill="none"
-                />
-                <g class="patient-art__eyes">
-                    <circle
-                        cx="110"
-                        cy="66"
-                        r="5"
-                        fill="#1f1a18"
-                    />
-                </g>
-                <path
-                    d="M94 72 q-10 4 -4 16 q6 -2 10 -8 Z"
-                    fill="#e8a24a"
-                />
-                <circle
-                    cx="100"
-                    cy="90"
-                    r="4"
-                    fill="#5aa9d6"
-                />
-            </g>
-            <path
-                d="M120 170 v-8 M140 170 v-8"
-                stroke="#9a7a6a"
-                stroke-width="4"
-                stroke-linecap="round"
-            />
-        </svg>
     </component>
 </template>
 
@@ -791,7 +679,6 @@ $puff-duration: 2.2s;
         }
     }
 
-    &--bird &__tail,
     &--pig &__tail {
         transform-origin: left center;
     }

@@ -7,10 +7,10 @@
  */
 
 /**
- * Пациент на арте карты: 3D-модель из public/models (источники — CREDITS.md).
+ * Пациент на арте карты: 2D-иллюстрация по виду животного.
  * @typedef {object} ProfessionPatient
  * @property {string} name
- * @property {'dog' | 'cat' | 'bird' | 'pig'} kind кого рисует 2D-иллюстрация
+ * @property {'dog' | 'cat' | 'pig'} kind кого рисует 2D-иллюстрация
  */
 
 /**

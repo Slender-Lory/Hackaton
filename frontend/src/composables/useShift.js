@@ -112,7 +112,9 @@ export function useShift(professionCode) {
     const shiftHint = computed(() => getHint(shift.value?.hints, difficulty.value));
     const openRoomCodes = computed(() =>
         state.value
-            ? clinicRooms.filter((room) => meetsConditions(room.unlock, state.value)).map((room) => room.code)
+            ? clinicRooms
+                  .filter((room) => !room.isClosed && meetsConditions(room.unlock, state.value))
+                  .map((room) => room.code)
             : [],
     );
     const activeChart = computed(() =>
