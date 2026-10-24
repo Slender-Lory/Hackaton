@@ -121,6 +121,9 @@ Browser (Vue/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 
 Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 
+Контракт для фронта со сценариями — [`docs/api.md`](docs/api.md); готовые TS-типы и функции
+(регистрация, вход, прогресс, гость в `localStorage`) — `frontend/src/shared/api/`.
+
 | Метод | Путь | Назначение | Ответ |
 |---|---|---|---|
 | GET | `/health` | liveness (healthcheck'и compose) | `{ status: "ok", service }` |

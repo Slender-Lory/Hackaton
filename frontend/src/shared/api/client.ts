@@ -11,11 +11,17 @@
  */
 export const API_BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 
-/** Ошибка запроса к API: хранит HTTP-статус, URL и тело ответа. */
+/**
+ * Ошибка запроса к API: хранит HTTP-статус, URL и тело ответа.
+ * Если backend вернул { error: { code, message } }, они доступны как code и serverMessage
+ * (serverMessage — готовый текст для игрока).
+ */
 export class ApiError extends Error {
   readonly status: number;
   readonly url: string;
   readonly body: string;
+  readonly code?: number;
+  readonly serverMessage?: string;
 
   constructor(status: number, url: string, body: string) {
     super(`API ${status} for ${url}`);
@@ -23,7 +29,27 @@ export class ApiError extends Error {
     this.status = status;
     this.url = url;
     this.body = body;
+
+    const error = parseErrorBody(body);
+    this.code = error?.code;
+    this.serverMessage = error?.message;
   }
+}
+
+function parseErrorBody(body: string): { code?: number; message?: string } | undefined {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (parsed && typeof parsed === "object" && "error" in parsed) {
+      const error = (parsed as { error?: { code?: unknown; message?: unknown } | null }).error;
+      return {
+        code: typeof error?.code === "number" ? error.code : undefined,
+        message: typeof error?.message === "string" ? error.message : undefined,
+      };
+    }
+  } catch {
+    // не JSON — оставляем только body
+  }
+  return undefined;
 }
 
 /** Универсальная функция запроса: JSON in/out, поддержка 204, сетевых и HTTP-ошибок. */
