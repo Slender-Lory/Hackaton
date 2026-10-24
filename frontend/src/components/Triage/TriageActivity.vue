@@ -1,6 +1,6 @@
 <script setup>
 import {computed, toRef} from 'vue';
-import {Bird, Cat, Clock3, Dog, HeartPulse, UserRound, UsersRound} from 'lucide-vue-next';
+import {Cat, Clock3, Dog, Rabbit, HeartPulse, UserRound, UsersRound} from 'lucide-vue-next';
 import {TRIAGE_DURATION_MS, TRIAGE_PATIENTS, TRIAGE_SCENARIO_ID} from '@/core/data/triage';
 import {useTriage} from '@/composables/useTriage';
 import {formatRubles} from '@/core/utils/format';
@@ -13,7 +13,7 @@ const props = defineProps({
     disabled: {type: Boolean, default: false},
 });
 const emit = defineEmits(['update:state', 'resolve', 'continue']);
-const icons = {bird: Bird, dog: Dog, cat: Cat};
+const icons = {dog: Dog, rabbit: Rabbit, cat: Cat};
 const {
     state: draft,
     remainingSeconds,
@@ -35,7 +35,7 @@ const countdown = computed(
 const waiting = computed(() => TRIAGE_PATIENTS.find((patient) => patient.id === waitingPatient.value));
 const statusLabels = {
     stable: 'Помощь оказана · стабилен',
-    lost: 'Пациент потерян',
+    worse: 'Стало хуже · понадобилась операция',
     referred: 'Ушёл без помощи клиники',
 };
 
@@ -58,7 +58,10 @@ function pick(role, patientId) {
                 >
                     Трое. Один стол. Минута.
                 </h1>
-                <p class="triage__lead">Кому поможешь сам, кого доверишь Мише, а кто сможет подождать?</p>
+                <p class="triage__lead">
+                    Все трое уверены, что их случай важнее. Кого возьмёшь на себя, кого доверишь стажёру Мише, а кто
+                    подождёт?
+                </p>
             </div>
             <div
                 v-if="!isResolved"
@@ -171,13 +174,13 @@ function pick(role, patientId) {
                     <p>
                         <strong>{{ waiting.name }}</strong>
                         {{
-                            waiting.id === 'parrot'
+                            waiting.id === 'dog'
                                 ? 'не может безопасно ждать. Пересмотри распределение.'
                                 : 'остаётся после первого пациента — или уходит без помощи.'
                         }}
                     </p>
                     <fieldset
-                        v-if="waiting.id !== 'parrot'"
+                        v-if="waiting.id !== 'dog'"
                         class="triage__waiting-options"
                         :disabled="disabled"
                     >
@@ -209,8 +212,8 @@ function pick(role, patientId) {
 
             <footer class="triage__footer">
                 <p>
-                    После минуты выбранные назначения сохранятся, незаполненные места займут пациенты в порядке
-                    поступления. Это может стоить жизни попугаю.
+                    После минуты выбранные назначения сохранятся, а свободные места займут те, кто громче спорит. Псу
+                    Олега это может стоить здоровья.
                 </p>
                 <UiButton
                     :disabled="disabled || !canSubmit"
@@ -243,7 +246,7 @@ function pick(role, patientId) {
                 <li
                     v-for="patient in TRIAGE_PATIENTS"
                     :key="patient.id"
-                    :class="{'triage__outcome--lost': result.patientOutcomes[patient.id] === 'lost'}"
+                    :class="{'triage__outcome--lost': result.patientOutcomes[patient.id] === 'worse'}"
                 >
                     <component
                         :is="icons[patient.icon]"
@@ -269,8 +272,8 @@ function pick(role, patientId) {
             <details class="triage__breakdown">
                 <summary>Почему изменились счётчики?</summary>
                 <p>
-                    Приём кошки: 1 400 ₽. Помощь попугаю: 600 ₽, при потере — 200 ₽ расходников. Собака Олега: 400 ₽ из
-                    средств клиники, без оплаты владельцем.
+                    Пёс Олега: 3 000 ₽ расходников за счёт клиники, если ему стало хуже — 12 000 ₽ на операцию. Кролик
+                    Жанны: 3 500 ₽. Кот Бориса Аркадьевича: 4 500 ₽, а у главного врача — втрое больше.
                 </p>
                 <ul>
                     <li
@@ -282,8 +285,8 @@ function pick(role, patientId) {
                 </ul>
             </details>
             <p class="triage__lesson">
-                Приоритет: попугай — немедленная стабилизация, собака — срочная помощь, кошка — плановый приём. Миша
-                помогает с рутинными задачами, а не заменяет врача.
+                Приоритет: сбитый пёс — немедленная помощь, кролик — срочная, пожилой кот — плановый приём. Деньги и
+                видео важны для клиники, но очередь по срочности защищает тех, кто не может ждать.
             </p>
             <UiButton
                 :disabled="disabled"
@@ -382,10 +385,10 @@ function pick(role, patientId) {
         border-radius: $radius-card;
         background: $color-white;
     }
-    &__patient--parrot {
+    &__patient--dog {
         border-top: 5px solid $color-danger;
     }
-    &__patient--dog {
+    &__patient--rabbit {
         border-top: 5px solid $color-action;
     }
     &__patient--cat {

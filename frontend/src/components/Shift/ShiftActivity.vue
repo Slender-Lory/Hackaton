@@ -3,11 +3,13 @@ import {computed, ref, watch} from 'vue';
 import {ArrowLeft, ArrowRight, IdCard, Lightbulb, LogOut} from 'lucide-vue-next';
 import {STORY_ANSWER} from '@/core/constants';
 import {getHint, getLockedOptions, getOpenStepIndex, getStepResult, getStoryVariant} from '@/core/utils/shift';
+import {getPassportPrompt, isPatientPresent, personalizeDialogue} from '@/core/utils/gamePresentation';
 
 import ShiftChecklist from '@/components/Shift/ShiftChecklist.vue';
 import ShiftChoice from '@/components/Shift/ShiftChoice.vue';
 import ShiftEffects from '@/components/Shift/ShiftEffects.vue';
 import ShiftExam from '@/components/Shift/ShiftExam.vue';
+import ShiftScene from '@/components/Shift/ShiftScene.vue';
 import UiButton from '@/components/Ui/UiButton.vue';
 
 const props = defineProps({
@@ -15,9 +17,10 @@ const props = defineProps({
     activity: {type: Object, required: true},
     /** @type {import('vue').PropType<import('@/core/types/shift').ShiftState>} */
     state: {type: Object, required: true},
+    nickname: {type: String, default: ''},
 });
 
-const emit = defineEmits(['answer', 'close', 'passport']);
+const emit = defineEmits(['answer', 'close', 'passport', 'step-change']);
 
 const stepIndex = ref(getOpenStepIndex(props.activity.steps, props.state.answers[props.activity.code] ?? {}));
 const isHintShown = ref(false);
@@ -36,12 +39,22 @@ const hint = computed(() => getHint(step.value.hints, props.state.difficulty));
 const variant = computed(() => (isStory.value ? getStoryVariant(step.value, props.state, answer.value) : null));
 const view = computed(() => ({
     title: variant.value?.title ?? step.value.title,
-    text: variant.value?.text ?? step.value.text,
+    text: personalizeDialogue(variant.value?.text ?? step.value.text, props.nickname),
+    speaker: variant.value?.speaker ?? step.value.speaker ?? null,
     effects: variant.value ? variant.value.effects : step.value.effects,
 }));
 const lockedOptions = computed(() =>
     step.value.kind === 'choice' && !isAnswered.value ? getLockedOptions(step.value.options, props.state) : {},
 );
+const hasPatient = computed(() => isPatientPresent(step.value));
+const passportPrompt = computed(() => {
+    const firstPatientStep = props.activity.steps.find((item) => isPatientPresent(item));
+    return step.value === firstPatientStep || ['exam', 'checklist'].includes(step.value.kind)
+        ? getPassportPrompt(step.value)
+        : null;
+});
+
+watch(step, (currentStep) => emit('step-change', currentStep), {immediate: true});
 
 watch(stepIndex, () => {
     isHintShown.value = false;
@@ -90,6 +103,7 @@ function handleHintToggle() {
                     К плану клиники
                 </button>
                 <button
+                    v-if="hasPatient"
                     class="shift-activity__passport"
                     type="button"
                     @click="emit('passport')"
@@ -131,8 +145,48 @@ function handleHintToggle() {
                 :key="step.id"
                 class="shift-activity__step"
             >
+                <ShiftScene
+                    v-if="hasPatient"
+                    :room-code="activity.roomCode"
+                />
                 <h2 class="shift-activity__step-title">{{ view.title }}</h2>
-                <p class="shift-activity__text">{{ view.text }}</p>
+                <p
+                    v-if="view.speaker"
+                    class="shift-activity__speaker"
+                >
+                    <span
+                        class="shift-activity__avatar"
+                        aria-hidden="true"
+                    >
+                        {{ view.speaker.name.charAt(0) }}
+                    </span>
+                    <span>
+                        <span class="shift-activity__speaker-name">{{ view.speaker.name }}</span>
+                        <span class="shift-activity__speaker-role">{{ view.speaker.role }}</span>
+                    </span>
+                </p>
+                <p :class="['shift-activity__text', {'shift-activity__text--speech': view.speaker}]">{{ view.text }}</p>
+
+                <aside
+                    v-if="passportPrompt"
+                    class="shift-activity__passport-note"
+                    aria-label="Зачем нужен паспорт пациента"
+                >
+                    <IdCard
+                        :size="24"
+                        aria-hidden="true"
+                    />
+                    <div>
+                        <strong>Паспорт помогает принять решение</strong>
+                        <p>{{ passportPrompt }}</p>
+                        <button
+                            type="button"
+                            @click="emit('passport')"
+                        >
+                            Посмотреть паспорт пациента
+                        </button>
+                    </div>
+                </aside>
 
                 <div
                     v-if="hint && !isAnswered"
@@ -274,6 +328,33 @@ function handleHintToggle() {
         }
     }
 
+    &__passport-note {
+        display: flex;
+        align-items: flex-start;
+        gap: $indent-step * 3;
+        padding: $indent-step * 4;
+        border-left: 4px solid $color-action;
+        border-radius: $radius-card-inner;
+        background: $color-card-text-box;
+        font-size: $font-size-sm;
+        line-height: 1.6;
+
+        svg {
+            flex-shrink: 0;
+        }
+        p {
+            margin-top: $indent-step * 2;
+        }
+        button {
+            margin-top: $indent-step * 2;
+            min-height: 44px;
+            text-align: left;
+            text-decoration: underline;
+            font-weight: $font-weight-semibold;
+            @include button-reset;
+        }
+    }
+
     &__title {
         @include display(clamp(32px, 5vw, 56px));
     }
@@ -319,6 +400,43 @@ function handleHintToggle() {
 
     &__step-title {
         @include display($font-size-xl);
+    }
+
+    &__speaker {
+        display: flex;
+        align-items: center;
+        gap: $indent-step * 3;
+    }
+
+    &__avatar {
+        flex-shrink: 0;
+        width: $indent-step * 10;
+        height: $indent-step * 10;
+        color: $color-white;
+        border-radius: $radius-chip;
+        background-color: $color-accent;
+        font-weight: $font-weight-bold;
+
+        @include flex-center;
+    }
+
+    &__speaker-name {
+        display: block;
+        font-weight: $font-weight-bold;
+    }
+
+    &__speaker-role {
+        display: block;
+        color: $color-ink-soft;
+        font-size: $font-size-xs;
+    }
+
+    &__text--speech {
+        border-radius: $radius-card-inner;
+        background-color: $color-card-text-box;
+
+        @include padding('y', 3);
+        @include padding('x', 4);
     }
 
     &__text {

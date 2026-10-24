@@ -1,6 +1,8 @@
 <script setup>
 import {computed} from 'vue';
-import {Play} from 'lucide-vue-next';
+import {useRouter} from 'vue-router';
+import {GraduationCap, Play} from 'lucide-vue-next';
+import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
 import {useToastStore} from '@/core/stores/toast';
@@ -19,6 +21,7 @@ const MAIN_CARD_ORDER = 3;
 
 const emit = defineEmits(['play']);
 
+const router = useRouter();
 const playerStore = usePlayerStore();
 const toastStore = useToastStore();
 
@@ -37,6 +40,10 @@ function getSideStyle(index) {
 /** @param {import('@/core/types/profession').Profession} profession */
 function handleLocked(profession) {
     toastStore.show(`${profession.title} — карта откроется в следующих обновлениях`);
+}
+
+function handleAbout() {
+    router.push({name: ROUTE_NAMES.professionAbout, params: {profession: mainProfession.code}});
 }
 </script>
 
@@ -83,24 +90,37 @@ function handleLocked(profession) {
         </ul>
 
         <div class="professions__actions">
-            <UiButton
-                large
-                @click="emit('play', mainProfession)"
-            >
-                <Play
-                    :size="20"
-                    aria-hidden="true"
-                />
-                {{ mainPercent === null ? 'Начать смену' : 'Продолжить смену' }}
-            </UiButton>
+            <div class="professions__buttons">
+                <UiButton
+                    large
+                    @click="emit('play', mainProfession)"
+                >
+                    <Play
+                        :size="20"
+                        aria-hidden="true"
+                    />
+                    {{ mainPercent === null ? 'Начать смену' : 'Продолжить смену' }}
+                </UiButton>
+                <UiButton
+                    theme="ghost"
+                    large
+                    @click="handleAbout"
+                >
+                    <GraduationCap
+                        :size="20"
+                        aria-hidden="true"
+                    />
+                    Как стать ветеринаром
+                </UiButton>
+            </div>
             <p class="professions__note">Без регистрации, нужно только имя</p>
         </div>
     </section>
 </template>
 
 <style lang="scss">
-$main-card-width: 300px;
-$side-card-width: 168px;
+$main-card-width: 274px;
+$side-card-width: 154px;
 $side-card-overlap: 10px;
 $mobile-card-width: 248px;
 $mobile-card-half: 124px;
@@ -109,18 +129,30 @@ $mobile-card-half: 124px;
     align-items: center;
     text-align: center;
 
-    @include column($indent-step * 6);
+    @include column($indent-step * 5);
     @include padding('top', 2);
-    @include padding('bottom', 10);
+    @include padding('bottom', 8);
+
+    @media (min-width: $tablet + 1px) {
+        zoom: 0.9;
+    }
+
+    @media (min-width: $tablet + 1px) and (max-height: 800px) {
+        zoom: 0.82;
+    }
+
+    @media (min-width: $tablet + 1px) and (max-height: 700px) {
+        zoom: 0.74;
+    }
 
     &__intro {
         align-items: center;
 
-        @include column($indent-step * 3);
+        @include column($indent-step * 2);
     }
 
     &__title {
-        @include display(clamp(40px, 6vw, 76px));
+        @include display(clamp(38px, 5.4vw, 68px));
 
         text-wrap: balance;
     }
@@ -158,9 +190,28 @@ $mobile-card-half: 124px;
     }
 
     &__actions {
+        position: relative;
+        z-index: $ui-index-4;
         align-items: center;
 
         @include column($indent-step * 3);
+    }
+
+    &__buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: $indent-step * 3;
+
+        .ui-button--ghost {
+            background: linear-gradient(135deg, $color-playmat-light, $color-playmat);
+
+            &:not(:disabled) {
+                @include hover {
+                    background: linear-gradient(135deg, $color-playmat-light, $color-playmat-deep);
+                }
+            }
+        }
     }
 
     &__note {
@@ -208,7 +259,7 @@ $mobile-card-half: 124px;
 
         &__actions {
             position: sticky;
-            z-index: $ui-index-2;
+            z-index: $ui-index-4;
             bottom: $indent-step * 4;
             width: 100%;
 

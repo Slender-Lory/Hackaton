@@ -2,7 +2,8 @@
 import {storeToRefs} from 'pinia';
 import {computed, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
-import {ArrowLeft, RotateCcw} from 'lucide-vue-next';
+import {ArrowLeft, ClipboardList, RotateCcw} from 'lucide-vue-next';
+import {getNextActivity, getShiftGuidance, isPatientPresent} from '@/core/utils/gamePresentation';
 import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
@@ -20,8 +21,6 @@ import ShiftFinale from '@/components/Shift/ShiftFinale.vue';
 import ShiftMorning from '@/components/Shift/ShiftMorning.vue';
 import ShiftPatientCard from '@/components/Shift/ShiftPatientCard.vue';
 import TriageActivity from '@/components/Triage/TriageActivity.vue';
-
-const PLAN_NOTE = 'Выбери, с чего начать: подсвеченные комнаты ждут тебя.';
 
 const route = useRoute();
 const router = useRouter();
@@ -44,7 +43,6 @@ const {
     chapterReview,
     hasProgress,
     needsDifficulty,
-    shiftHint,
     openRoomCodes,
     activeChart,
     openActivity,
@@ -60,14 +58,37 @@ const {
 
 const isResetFormOpen = ref(false);
 const isPassportOpen = ref(false);
+const activeStep = ref(null);
+const hasPatient = computed(() => activeActivity.value?.kind !== 'triage' && isPatientPresent(activeStep.value));
+const guidance = computed(() => getShiftGuidance(shift.value, state.value?.difficulty));
 
 const profession = computed(() => professions.find((item) => item.code === professionCode.value));
+const nextActivity = computed(() =>
+    getNextActivity(shift.value?.activities ?? [], activityStatuses.value, openRoomCodes.value),
+);
+const shiftCard = computed(() => {
+    if (!profession.value) return null;
+
+    const activity = isShiftFinished.value ? null : nextActivity.value;
+
+    return {
+        ...profession.value,
+        patient: activity && activity.kind !== 'triage' ? activity.patient : null,
+        kind: activity ? `Далее: ${activity.patient.passport.species}` : 'Итоги смены',
+        tagline: activity ? `${activity.title} · ${activity.place}` : 'Все доступные дела смены завершены.',
+    };
+});
 
 watch([isRestored, state], leaveIfCannotPlay, {immediate: true});
 
 watch([activeActivity, () => shift.value?.number], () => {
     isPassportOpen.value = false;
+    activeStep.value = null;
     window.scrollTo({top: 0});
+});
+
+watch(hasPatient, (present) => {
+    if (!present) isPassportOpen.value = false;
 });
 
 function leaveIfCannotPlay() {
@@ -98,11 +119,11 @@ function handleReset() {
     >
         <div
             v-if="activeActivity"
-            class="game-page__table"
+            :class="['game-page__table', {'game-page__table--scene-only': !hasPatient}]"
         >
             <TriageActivity
                 v-if="activeActivity.kind === 'triage'"
-                :key="activeActivity.code"
+                :key="`triage-${activeActivity.code}`"
                 :state="getAnswers(activeActivity.code).triage ?? null"
                 :scenario-id="`vet-shift-${shift.number}-${activeActivity.code}`"
                 :counters="counters"
@@ -112,19 +133,21 @@ function handleReset() {
             />
             <ShiftActivity
                 v-else
-                :key="activeActivity.code"
+                :key="`shift-${activeActivity.code}`"
                 :activity="activeActivity"
                 :state="state"
+                :nickname="playerStore.nickname"
                 @answer="answerStep"
                 @close="closeActivity"
                 @passport="isPassportOpen = true"
+                @step-change="activeStep = $event"
             >
                 <template #counters>
                     <ShiftCounters :counters="counters" />
                 </template>
             </ShiftActivity>
             <ShiftPatientCard
-                v-if="activeActivity.kind !== 'triage'"
+                v-if="hasPatient"
                 class="game-page__card"
                 :activity="activeActivity"
                 @passport="isPassportOpen = true"
@@ -184,7 +207,19 @@ function handleReset() {
                             v-if="morningEvents.length"
                             :events="morningEvents"
                         />
-                        <p class="game-page__note">{{ shiftHint ?? PLAN_NOTE }}</p>
+                        <aside
+                            class="game-page__note"
+                            aria-labelledby="shift-plan-title"
+                        >
+                            <ClipboardList
+                                :size="26"
+                                aria-hidden="true"
+                            />
+                            <div>
+                                <h2 id="shift-plan-title">План смены</h2>
+                                <p>{{ guidance }}</p>
+                            </div>
+                        </aside>
                         <ClinicPlan
                             :open-room-codes="openRoomCodes"
                             :activities="shift.activities"
@@ -194,9 +229,9 @@ function handleReset() {
                     </template>
                 </div>
                 <ProfessionCard
-                    v-if="profession"
+                    v-if="shiftCard"
                     class="game-page__card"
-                    :profession="profession"
+                    :profession="shiftCard"
                     :percent="playerStore.getPercent(profession.code)"
                     is-patient-sick
                 />
@@ -204,7 +239,7 @@ function handleReset() {
         </template>
 
         <PatientPassport
-            v-if="isPassportOpen && activeActivity"
+            v-if="isPassportOpen && activeActivity && hasPatient"
             :patient="activeActivity.patient"
             :chart="activeChart"
             @close="isPassportOpen = false"
@@ -287,6 +322,11 @@ $card-width: 320px;
         }
     }
 
+    &__table--scene-only {
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 900px;
+    }
+
     &__card {
         position: sticky;
         top: $indent-step * 6;
@@ -302,9 +342,29 @@ $card-width: 320px;
     }
 
     &__note {
-        margin-bottom: -$indent-step * 4;
-        color: $color-on-playmat-soft;
-        font-size: $font-size-sm;
+        display: flex;
+        align-items: flex-start;
+        gap: $indent-step * 3;
+        padding: $indent-step * 5;
+        border-left: 5px solid $color-action;
+        border-radius: $radius-card-inner;
+        background: $color-card-face;
+        color: $color-ink;
+        box-shadow: $shadow-button;
+        font-size: $font-size-md;
+        line-height: 1.6;
+
+        svg {
+            flex-shrink: 0;
+            margin-top: $indent-step;
+        }
+
+        
+        h2 {
+            margin-bottom: $indent-step * 2;
+            font-size: $font-size-lg;
+            font-weight: $font-weight-bold;
+        }
     }
 }
 </style>

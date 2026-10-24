@@ -1,5 +1,5 @@
 /**
- * @typedef {'parrot' | 'dog' | 'cat'} TriagePatientId
+ * @typedef {'dog' | 'rabbit' | 'cat'} TriagePatientId
  * @typedef {{doctor: TriagePatientId | null, assistant: TriagePatientId | null}} TriageAssignments
  * @typedef {object} TriageState
  * @property {1} version
@@ -18,7 +18,7 @@
  * @property {string} feedback
  * @property {{revenue: number, reputation: number}} effects
  * @property {Record<TriagePatientId, string>} patientOutcomes
- * @property {{parrotSaved: boolean, strayHelped: boolean, correctPriority: boolean, allStable: boolean, timedOut: boolean}} flags
+ * @property {{dogHelped: boolean, videoPromised: boolean, triplePaid: boolean, correctPriority: boolean, allStable: boolean, timedOut: boolean}} flags
  * @property {TriagePatientId[]} order
  * @property {{code: string, label: string, value: number}[]} reputationEvents
  */
