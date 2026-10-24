@@ -1,7 +1,7 @@
 namespace Hackat.Players.Services.Sessions;
 
 /// <summary>Сессия, найденная по токену из заголовка Authorization.</summary>
-public sealed record SessionInfo(long SessionId, Guid PlayerId, bool IsRegistered);
+public sealed record SessionInfo(long SessionId, Guid PlayerId);
 
 public interface ISessionsService
 {

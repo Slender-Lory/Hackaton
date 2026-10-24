@@ -33,6 +33,7 @@ namespace Hackat.Players.Database.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)");
 
@@ -45,6 +46,7 @@ namespace Hackat.Players.Database.Migrations
                         .HasColumnType("character varying(32)");
 
                     b.Property<string>("NormalizedEmail")
+                        .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)");
 
@@ -54,11 +56,9 @@ namespace Hackat.Players.Database.Migrations
                         .HasColumnType("character varying(32)");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
-
-                    b.Property<DateTimeOffset?>("RegisteredAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -124,7 +124,7 @@ namespace Hackat.Players.Database.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("ExpiresAt")
+                    b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("LastUsedAt")

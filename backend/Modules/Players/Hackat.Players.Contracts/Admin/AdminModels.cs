@@ -12,14 +12,11 @@ public sealed record ProgressSummaryModel(
     int Revision,
     DateTimeOffset UpdatedAt);
 
-/// <param name="Email">null — гость.</param>
 public sealed record AdminPlayerListItemModel(
     Guid Id,
     string Nickname,
-    bool IsRegistered,
-    string? Email,
+    string Email,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? RegisteredAt,
     DateTimeOffset LastSeenAt,
     ProgressSummaryModel[] Progress);
 
@@ -27,10 +24,8 @@ public sealed record AdminPlayerListItemModel(
 public sealed record AdminPlayerDetailsModel(
     Guid Id,
     string Nickname,
-    bool IsRegistered,
-    string? Email,
+    string Email,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? RegisteredAt,
     DateTimeOffset LastSeenAt,
     ProgressModel[] Progress);
 
@@ -41,9 +36,9 @@ public sealed record ProfessionStatsModel(
     int Completed,
     double AveragePercent);
 
+/// <param name="TotalPlayers">Зарегистрированные игроки (гости на сервере не хранятся).</param>
 public sealed record AdminStatsModel(
     int TotalPlayers,
-    int RegisteredPlayers,
     int NewLast24Hours,
     int ActiveLast24Hours,
     ProfessionStatsModel[] Professions);

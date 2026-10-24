@@ -17,41 +17,38 @@ public sealed class PlayersController(
     IProgressService progressService) : ApiControllerBase
 {
     /// <summary>
-    /// Игра без регистрации: создаётся гость, в ответе token (сохранить на фронте!).
-    /// Прогресс гостя доступен только из этого браузера, пока жив токен.
-    /// </summary>
-    [HttpPost("enter")]
-    [AllowAnonymous]
-    public async Task<ActionResult<AppResult<AuthResultModel>>> Enter([FromBody] EnterForm form) =>
-        AppResult(await playersService.Enter(form));
-
-    /// <summary>
-    /// Регистрация по почте и паролю. С токеном гостя — гость становится аккаунтом вместе с прогрессом,
-    /// без токена — создаётся новый игрок (нужен nickname). В ответе новый token (старый перестаёт работать).
+    /// Регистрация по почте и паролю. Гость передаёт свой прогресс из localStorage в progress —
+    /// аккаунт создаётся сразу с ним. В ответе token сессии этого устройства.
     /// </summary>
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(AuthRateLimits.PlayerAuth)]
     public async Task<ActionResult<AppResult<AuthResultModel>>> Register([FromBody] RegisterForm form) =>
-        AppResult(await playersService.Register(form, CurrentSession));
+        AppResult(await playersService.Register(form));
 
     /// <summary>
-    /// Вход по почте и паролю. С токеном гостя — его прогресс переносится в не начатые профессии аккаунта,
-    /// гость удаляется (см. transferredProfessions / discardedProfessions).
+    /// Вход по почте и паролю. Прогресс гостя из localStorage (progress) переносится в профессии,
+    /// не начатые в аккаунте (importedProfessions); где начаты — остаётся прогресс аккаунта (skippedProfessions).
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(AuthRateLimits.PlayerAuth)]
-    public async Task<ActionResult<AppResult<LoginResultModel>>> Login([FromBody] LoginForm form) =>
-        AppResult(await playersService.Login(form, CurrentSession));
+    public async Task<ActionResult<AppResult<AuthResultModel>>> Login([FromBody] LoginForm form) =>
+        AppResult(await playersService.Login(form));
 
-    /// <summary>Выход с этого устройства: токен перестаёт работать. Гостю вернуться к прогрессу будет нельзя.</summary>
+    /// <summary>Выход с этого устройства: токен перестаёт работать, другие устройства не затрагиваются.</summary>
     [HttpPost("logout")]
     public async Task<ActionResult<AppResult<bool>>> Logout()
     {
         await playersService.Logout(RequiredSession);
         return AppResult(true);
     }
+
+    /// <summary>Удаление аккаунта вместе с прогрессом и сессиями на всех устройствах. Нужен пароль.</summary>
+    [HttpDelete("me")]
+    [EnableRateLimiting(AuthRateLimits.PlayerAuth)]
+    public async Task<ActionResult<AppResult<bool>>> DeleteAccount([FromBody] DeleteAccountForm form) =>
+        AppResult(await playersService.DeleteAccount(RequiredPlayerId, form));
 
     /// <summary>Профиль текущего игрока с прогрессом по всем профессиям.</summary>
     [HttpGet("me")]

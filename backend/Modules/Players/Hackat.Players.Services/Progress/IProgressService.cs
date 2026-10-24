@@ -12,4 +12,10 @@ public interface IProgressService
 
     /// <summary>Сохраняет прогресс с проверкой ревизии (защита от затирания из другой вкладки).</summary>
     Task<AppResult<ProgressModel>> Save(Guid playerId, string professionCode, SaveProgressForm form);
+
+    /// <summary>
+    /// Переносит прогресс гостя из браузера (уже проверенный <see cref="ProgressRules.ValidateLocal"/>):
+    /// только профессии, не начатые в аккаунте. Imported — перенесённые, Skipped — где остался прогресс аккаунта.
+    /// </summary>
+    Task<(string[] Imported, string[] Skipped)> ImportLocal(Guid playerId, LocalProgressForm[]? items);
 }

@@ -1,8 +1,8 @@
 namespace Hackat.Players.Database.Entities;
 
 /// <summary>
-/// Игрок. Гость — только никнейм, играет из одного браузера (по сессии).
-/// Зарегистрированный — у той же записи заполнены Email/PasswordHash, вход с любого устройства.
+/// Зарегистрированный игрок (почта + пароль). Гости на сервере не хранятся:
+/// их прогресс живёт в localStorage и переносится сюда при регистрации или входе.
 /// </summary>
 public class Player
 {
@@ -14,22 +14,18 @@ public class Player
     /// <summary>Никнейм в нижнем регистре без лишних пробелов — для поиска в админке.</summary>
     public string NormalizedNickname { get; set; } = "";
 
-    /// <summary>Почта как её ввёл игрок; null — гость.</summary>
-    public string? Email { get; set; }
+    /// <summary>Почта как её ввёл игрок. Используется только для входа.</summary>
+    public string Email { get; set; } = "";
 
     /// <summary>Почта в нижнем регистре — уникальный ключ входа.</summary>
-    public string? NormalizedEmail { get; set; }
+    public string NormalizedEmail { get; set; } = "";
 
     /// <summary>Хеш пароля (ASP.NET Core Identity PasswordHasher, PBKDF2).</summary>
-    public string? PasswordHash { get; set; }
+    public string PasswordHash { get; set; } = "";
 
     public DateTimeOffset CreatedAt { get; set; }
 
-    public DateTimeOffset? RegisteredAt { get; set; }
-
     public DateTimeOffset LastSeenAt { get; set; }
-
-    public bool IsRegistered => RegisteredAt is not null;
 
     public List<PlayerProgress> Progress { get; set; } = [];
 

@@ -23,12 +23,10 @@ public class PlayersDbContext(DbContextOptions<PlayersDbContext> options) : DbCo
             e.HasKey(u => u.Id);
             e.Property(u => u.Nickname).HasMaxLength(32).IsRequired();
             e.Property(u => u.NormalizedNickname).HasMaxLength(32).IsRequired();
-            e.Property(u => u.Email).HasMaxLength(254);
-            e.Property(u => u.NormalizedEmail).HasMaxLength(254);
-            e.Property(u => u.PasswordHash).HasMaxLength(256);
-            e.Ignore(u => u.IsRegistered);
+            e.Property(u => u.Email).HasMaxLength(254).IsRequired();
+            e.Property(u => u.NormalizedEmail).HasMaxLength(254).IsRequired();
+            e.Property(u => u.PasswordHash).HasMaxLength(256).IsRequired();
 
-            // NULL у гостей не мешает уникальности в PostgreSQL.
             e.HasIndex(u => u.NormalizedEmail).IsUnique();
         });
 

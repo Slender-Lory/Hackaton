@@ -19,11 +19,10 @@ internal sealed class PlayersAdminService(
     public async Task<PagedResult<AdminPlayerListItemModel>> GetPlayers(AdminPlayersFilterForm form)
     {
         var filter = string.IsNullOrWhiteSpace(form.Search)
-            ? new PlayersSearch(null, null, form.Kind)
+            ? PlayersSearch.Everyone
             : new PlayersSearch(
                 NicknameNormalizer.ToKey(NicknameNormalizer.ToDisplay(form.Search)),
-                form.Search.Trim().ToLowerInvariant(),
-                form.Kind);
+                form.Search.Trim().ToLowerInvariant());
 
         var players = await adminQueries.Search(filter, form.Offset, form.Count);
         var total = await adminQueries.Count(filter);
@@ -45,10 +44,8 @@ internal sealed class PlayersAdminService(
         return new AdminPlayerDetailsModel(
             player.Id,
             player.Nickname,
-            player.IsRegistered,
             player.Email,
             player.CreatedAt,
-            player.RegisteredAt,
             player.LastSeenAt,
             progress);
     }
@@ -67,7 +64,6 @@ internal sealed class PlayersAdminService(
 
         return new AdminStatsModel(
             await adminQueries.Count(PlayersSearch.Everyone),
-            await adminQueries.Count(new PlayersSearch(null, null, PlayerKind.Registered)),
             await adminQueries.CountCreatedSince(dayAgo),
             await adminQueries.CountSeenSince(dayAgo),
             professions);

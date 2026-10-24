@@ -15,17 +15,19 @@ public sealed class PlayersApi(HttpClient client)
 
     private static readonly JsonSerializerOptions _json = JsonSerializerOptions.Web;
 
-    public Task<ApiResponse<AuthResultModel>> Enter(string nickname) =>
-        Send<AuthResultModel>(HttpMethod.Post, "/api/v1/players/enter", null, new { nickname });
+    public Task<ApiResponse<AuthResultModel>> Register(
+        string email, string password = DefaultPassword, string? nickname = null, object[]? progress = null) =>
+        Send<AuthResultModel>(HttpMethod.Post, "/api/v1/players/register", null,
+            new { email, password, nickname = nickname ?? UniqueNickname(), progress });
 
-    public Task<ApiResponse<AuthResultModel>> Register(string? token, string email, string password = DefaultPassword, string? nickname = null) =>
-        Send<AuthResultModel>(HttpMethod.Post, "/api/v1/players/register", token, new { email, password, nickname });
-
-    public Task<ApiResponse<LoginResultModel>> Login(string? token, string email, string password = DefaultPassword) =>
-        Send<LoginResultModel>(HttpMethod.Post, "/api/v1/players/login", token, new { email, password });
+    public Task<ApiResponse<AuthResultModel>> Login(string email, string password = DefaultPassword, object[]? progress = null) =>
+        Send<AuthResultModel>(HttpMethod.Post, "/api/v1/players/login", null, new { email, password, progress });
 
     public Task<ApiResponse<bool>> Logout(string token) =>
         Send<bool>(HttpMethod.Post, "/api/v1/players/logout", token);
+
+    public Task<ApiResponse<bool>> DeleteAccount(string token, string password = DefaultPassword) =>
+        Send<bool>(HttpMethod.Delete, "/api/v1/players/me", token, new { password });
 
     public Task<ApiResponse<PlayerProfileModel>> Me(string? token) =>
         Send<PlayerProfileModel>(HttpMethod.Get, "/api/v1/players/me", token);
@@ -36,20 +38,11 @@ public sealed class PlayersApi(HttpClient client)
     public Task<ApiResponse<ProgressModel>> SaveProgress(string token, string professionCode, object form) =>
         Send<ProgressModel>(HttpMethod.Put, $"/api/v1/players/me/progress/{professionCode}", token, form);
 
-    /// <summary>Создаёт гостя с уникальным никнеймом и возвращает его токен.</summary>
-    public async Task<(AuthResultModel Player, string Token)> NewGuest()
-    {
-        var response = await Enter(UniqueNickname());
-        Assert.That(response.Status, Is.EqualTo(HttpStatusCode.OK), response.Raw);
-        var result = response.Body.Result!;
-        return (result, result.Token);
-    }
-
-    /// <summary>Регистрирует нового игрока (без гостя) и возвращает почту и токен.</summary>
-    public async Task<(AuthResultModel Player, string Email, string Token)> NewAccount()
+    /// <summary>Регистрирует нового игрока и возвращает почту и токен.</summary>
+    public async Task<(AuthResultModel Player, string Email, string Token)> NewAccount(object[]? progress = null)
     {
         var email = UniqueEmail();
-        var response = await Register(token: null, email, nickname: UniqueNickname());
+        var response = await Register(email, progress: progress);
         Assert.That(response.Status, Is.EqualTo(HttpStatusCode.OK), response.Raw);
         var result = response.Body.Result!;
         return (result, email, result.Token);
