@@ -119,8 +119,8 @@ function handleAbout() {
 </template>
 
 <style lang="scss">
-$main-card-width: 300px;
-$side-card-width: 168px;
+$main-card-width: 274px;
+$side-card-width: 154px;
 $side-card-overlap: 10px;
 $mobile-card-width: 248px;
 $mobile-card-half: 124px;
@@ -129,18 +129,30 @@ $mobile-card-half: 124px;
     align-items: center;
     text-align: center;
 
-    @include column($indent-step * 6);
+    @include column($indent-step * 5);
     @include padding('top', 2);
-    @include padding('bottom', 10);
+    @include padding('bottom', 8);
+
+    @media (min-width: $tablet + 1px) {
+        zoom: 0.9;
+    }
+
+    @media (min-width: $tablet + 1px) and (max-height: 800px) {
+        zoom: 0.82;
+    }
+
+    @media (min-width: $tablet + 1px) and (max-height: 700px) {
+        zoom: 0.74;
+    }
 
     &__intro {
         align-items: center;
 
-        @include column($indent-step * 3);
+        @include column($indent-step * 2);
     }
 
     &__title {
-        @include display(clamp(40px, 6vw, 76px));
+        @include display(clamp(38px, 5.4vw, 68px));
 
         text-wrap: balance;
     }
@@ -178,6 +190,8 @@ $mobile-card-half: 124px;
     }
 
     &__actions {
+        position: relative;
+        z-index: $ui-index-4;
         align-items: center;
 
         @include column($indent-step * 3);
@@ -188,6 +202,16 @@ $mobile-card-half: 124px;
         flex-wrap: wrap;
         justify-content: center;
         gap: $indent-step * 3;
+
+        .ui-button--ghost {
+            background: linear-gradient(135deg, $color-playmat-light, $color-playmat);
+
+            &:not(:disabled) {
+                @include hover {
+                    background: linear-gradient(135deg, $color-playmat-light, $color-playmat-deep);
+                }
+            }
+        }
     }
 
     &__note {
@@ -235,7 +259,7 @@ $mobile-card-half: 124px;
 
         &__actions {
             position: sticky;
-            z-index: $ui-index-2;
+            z-index: $ui-index-4;
             bottom: $indent-step * 4;
             width: 100%;
 

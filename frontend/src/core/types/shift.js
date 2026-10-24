@@ -96,6 +96,7 @@
 /**
  * Сцена. С variants текст и эффект зависят от того, как прошла глава; ответом сохраняется id варианта.
  * @typedef {object} StoryStep
+ * @property {boolean} [patientPresent] false для звонков и разговоров до встречи с пациентом
  * @property {'story'} kind
  * @property {string} id
  * @property {string} title

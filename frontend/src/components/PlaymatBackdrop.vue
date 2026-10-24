@@ -24,7 +24,6 @@
                 filter="url(#playmat-felt)"
             />
         </svg>
-        <div class="playmat__zone playmat__zone--deck" />
     </div>
 </template>
 
@@ -44,24 +43,6 @@
         height: 100%;
         mix-blend-mode: soft-light;
         opacity: 0.35;
-    }
-
-    &__zone {
-        position: absolute;
-        border: 2px dashed $color-playmat-line;
-        border-radius: $radius-card + 6px;
-
-        &--deck {
-            bottom: -14vh;
-            left: 4vw;
-            width: min(260px, 30vw);
-            transform: rotate(-8deg);
-            aspect-ratio: 5 / 7;
-        }
-
-        @include tablet {
-            display: none;
-        }
     }
 }
 </style>

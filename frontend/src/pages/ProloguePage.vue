@@ -222,25 +222,24 @@ function handleKeydown(event) {
         align-items: center;
         gap: $indent-step * 3;
     }
-}
+    &-scene-enter-active,
+    &-scene-leave-active {
+        transition:
+            opacity $duration-slow $ease-out,
+            transform $duration-slow $ease-out,
+            filter $duration-slow $ease-out;
+    }
 
-.prologue-scene-enter-active,
-.prologue-scene-leave-active {
-    transition:
-        opacity $duration-slow $ease-out,
-        transform $duration-slow $ease-out,
-        filter $duration-slow $ease-out;
-}
+    &-scene-enter-from {
+        transform: translateY($indent-step * 6);
+        opacity: 0;
+        filter: blur(6px);
+    }
 
-.prologue-scene-enter-from {
-    transform: translateY($indent-step * 6);
-    opacity: 0;
-    filter: blur(6px);
-}
-
-.prologue-scene-leave-to {
-    transform: translateY(-$indent-step * 4);
-    opacity: 0;
-    filter: blur(6px);
+    &-scene-leave-to {
+        transform: translateY(-$indent-step * 4);
+        opacity: 0;
+        filter: blur(6px);
+    }
 }
 </style>

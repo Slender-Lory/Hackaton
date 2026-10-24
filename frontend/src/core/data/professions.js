@@ -10,8 +10,8 @@ export const professions = Object.freeze([
         tagline: 'Три смены, вспышка рожи на свиноферме и пациенты, которые не умеют сказать, где болит.',
         stats: [
             {icon: 'calendar', label: 'Смены', value: '3'},
-            {icon: 'clock', label: 'Время', value: '30–40 мин'},
-            {icon: 'paw', label: 'Пациенты', value: '5 и стадо'},
+            {icon: 'clock', label: 'Время', value: '15–20 мин'},
+            {icon: 'paw', label: 'Пациенты', value: '5 + 40 поросят'},
         ],
         isAvailable: true,
     },
