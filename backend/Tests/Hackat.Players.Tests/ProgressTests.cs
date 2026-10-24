@@ -43,7 +43,7 @@ public sealed class ProgressTests
     [Test]
     public async Task Me_NewPlayer_HasNotStartedProgressForEveryProfession()
     {
-        var (created, token) = await _api.NewGuest();
+        var (created, _, token) = await _api.NewAccount();
 
         var response = await _api.Me(token);
 
@@ -59,7 +59,7 @@ public sealed class ProgressTests
     [Test]
     public async Task Save_ThenRead_ReturnsSavedProgressAndState()
     {
-        var (_, token) = await _api.NewGuest();
+        var (_, _, token) = await _api.NewAccount();
 
         var saved = await _api.SaveProgress(token, Vet, new
         {
@@ -85,7 +85,7 @@ public sealed class ProgressTests
     [Test]
     public async Task Save_WithSequentialRevisions_Succeeds()
     {
-        var (_, token) = await _api.NewGuest();
+        var (_, _, token) = await _api.NewAccount();
 
         var first = await _api.SaveProgress(token, Vet, new { level = 1, percent = 10, expectedRevision = 0 });
         var second = await _api.SaveProgress(token, Vet, new { level = 1, percent = 20, expectedRevision = 1 });
@@ -99,7 +99,7 @@ public sealed class ProgressTests
     [Test]
     public async Task Save_WithStaleRevision_IsConflict()
     {
-        var (_, token) = await _api.NewGuest();
+        var (_, _, token) = await _api.NewAccount();
         await _api.SaveProgress(token, Vet, new { level = 1, percent = 10, expectedRevision = 0 });
         await _api.SaveProgress(token, Vet, new { level = 1, percent = 20, expectedRevision = 1 });
 
@@ -115,8 +115,8 @@ public sealed class ProgressTests
     [Test]
     public async Task Save_ProgressOfOnePlayer_IsInvisibleToAnother()
     {
-        var (_, firstToken) = await _api.NewGuest();
-        var (_, secondToken) = await _api.NewGuest();
+        var (_, _, firstToken) = await _api.NewAccount();
+        var (_, _, secondToken) = await _api.NewAccount();
         await _api.SaveProgress(firstToken, Vet, new { level = 3, percent = 50, expectedRevision = 0 });
 
         var other = await _api.GetProgress(secondToken, Vet);
@@ -127,7 +127,7 @@ public sealed class ProgressTests
     [Test]
     public async Task Save_UnknownProfession_IsRejected()
     {
-        var (_, token) = await _api.NewGuest();
+        var (_, _, token) = await _api.NewAccount();
 
         var response = await _api.SaveProgress(token, "astronaut", new { level = 1, percent = 1, expectedRevision = 0 });
 
@@ -138,7 +138,7 @@ public sealed class ProgressTests
     [Test]
     public async Task Save_PercentOutOfRange_IsInvalidForm()
     {
-        var (_, token) = await _api.NewGuest();
+        var (_, _, token) = await _api.NewAccount();
 
         var response = await _api.SaveProgress(token, Vet, new { level = 1, percent = 150, expectedRevision = 0 });
 
@@ -149,7 +149,7 @@ public sealed class ProgressTests
     [Test]
     public async Task Save_StateNotAnObject_IsInvalidForm()
     {
-        var (_, token) = await _api.NewGuest();
+        var (_, _, token) = await _api.NewAccount();
 
         var response = await _api.SaveProgress(token, Vet, new { level = 1, percent = 1, state = new[] { 1, 2 }, expectedRevision = 0 });
 

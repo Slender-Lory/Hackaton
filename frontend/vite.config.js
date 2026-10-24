@@ -31,13 +31,12 @@ export default defineConfig(({mode}) => {
         server: {
             host: true,
             port: Number(env.VITE_PORT ?? 5173),
-            // Dev-прокси: /api/... → backend (http://localhost:8080), префикс /api снимается.
+            // Dev-прокси: /api/... → backend (http://localhost:8080) как есть, с префиксом /api.
             // Совпадает с поведением nginx в проде (см. infra/nginx/nginx.conf).
             proxy: {
                 '/api': {
                     target: env.VITE_DEV_API_TARGET ?? 'http://localhost:8080',
                     changeOrigin: true,
-                    rewrite: (path) => path.replace(/^\/api/, ''),
                 },
             },
         },

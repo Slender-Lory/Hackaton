@@ -7,7 +7,7 @@ import TheHeader from '@/components/Header/TheHeader.vue';
 
 const playerStore = usePlayerStore();
 
-onMounted(playerStore.loadProfile);
+onMounted(playerStore.restore);
 </script>
 
 <template>

@@ -1,15 +1,37 @@
 /**
  * Минимальный, но гибкий API-клиент.
  *
- * Базовый URL берётся из VITE_API_URL:
+ * Базовый URL берётся из VITE_API_URL — это корень /api backend'а:
  *  - по умолчанию "/api" — относительный путь:
- *      * dev:  запрос /api/... проксирует Vite → http://localhost:8080 (префикс снимается)
- *      * prod: запрос /api/... проксирует nginx → backend (префикс снимается)
- *  - можно задать абсолютный URL (https://api.example.com), если API живёт отдельно.
+ *      * dev:  запрос /api/... проксирует Vite → http://localhost:8080/api/... (путь не меняется)
+ *      * prod: запрос /api/... проксирует nginx → backend (путь не меняется)
+ *  - можно задать абсолютный URL (https://api.example.com/api), если API живёт отдельно.
+ *
+ * Пути в вызовах — относительно /api: api("/v1/players/me") → /api/v1/players/me.
  */
 export const API_BASE = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '');
 
-/** Ошибка запроса к API: хранит HTTP-статус, URL и тело ответа. */
+/**
+ * @param {string} body
+ * @returns {{code?: number, message?: string} | undefined}
+ */
+function parseErrorBody(body) {
+    try {
+        const error = JSON.parse(body)?.error;
+
+        return {
+            code: typeof error?.code === 'number' ? error.code : undefined,
+            message: typeof error?.message === 'string' ? error.message : undefined,
+        };
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Ошибка запроса к API: хранит HTTP-статус, URL и тело ответа.
+ * Если backend вернул { error: { code, message } }, они доступны как code и serverMessage.
+ */
 export class ApiError extends Error {
     /**
      * @param {number} status HTTP-статус (0 — сетевая ошибка)
@@ -22,6 +44,10 @@ export class ApiError extends Error {
         this.status = status;
         this.url = url;
         this.body = body;
+
+        const error = parseErrorBody(body);
+        this.code = error?.code;
+        this.serverMessage = error?.message;
     }
 }
 
@@ -45,7 +71,6 @@ export async function api(path, init) {
     try {
         response = await fetch(url, {...init, headers});
     } catch (cause) {
-        // Сетевая ошибка (нет соединения, CORS, DNS и т.п.)
         throw new ApiError(0, url, cause instanceof Error ? cause.message : String(cause));
     }
 
@@ -62,7 +87,6 @@ export async function api(path, init) {
     return text ? JSON.parse(text) : undefined;
 }
 
-/** Готовые типовые методы. */
 export const http = {
     get(path, init) {
         return api(path, {method: 'GET', ...init});
@@ -76,8 +100,8 @@ export const http = {
     patch(path, body, init) {
         return api(path, {method: 'PATCH', body: JSON.stringify(body ?? {}), ...init});
     },
-    delete(path, init) {
-        return api(path, {method: 'DELETE', ...init});
+    delete(path, body, init) {
+        return api(path, {method: 'DELETE', body: body === undefined ? undefined : JSON.stringify(body), ...init});
     },
 };
 

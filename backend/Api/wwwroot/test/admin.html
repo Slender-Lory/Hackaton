@@ -9,7 +9,7 @@
 <body>
 <main class="wide">
   <h1>Админка</h1>
-  <p class="muted">Все игроки и их прогресс. <a href="./">Страница гостя</a></p>
+  <p class="muted">Зарегистрированные игроки и их прогресс (гости хранятся только в своих браузерах). <a href="./">Страница гостя</a></p>
 
   <section id="login-panel">
     <h2>Вход администратора</h2>
@@ -38,14 +38,11 @@
       <h2>Игроки</h2>
       <form id="search-form" class="row" style="margin-bottom:10px">
         <div class="grow"><label for="search">Поиск по никнейму или почте</label><input id="search" autocomplete="off"></div>
-        <div><label for="kind">Кто</label>
-          <select id="kind"><option value="All">Все</option><option value="Registered">С аккаунтом</option><option value="Guests">Гости</option></select>
-        </div>
         <button type="submit">Найти</button>
       </form>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Никнейм</th><th>Аккаунт</th><th>Прогресс</th><th>Создан</th><th>Был в игре</th></tr></thead>
+          <thead><tr><th>Никнейм</th><th>Почта</th><th>Прогресс</th><th>Создан</th><th>Был в игре</th></tr></thead>
           <tbody id="players"></tbody>
         </table>
       </div>
@@ -143,8 +140,7 @@
     if (!r.ok) return;
     const s = r.result;
     const items = [
-      ["Всего игроков", s.totalPlayers],
-      ["С аккаунтом", s.registeredPlayers],
+      ["Игроков с аккаунтом", s.totalPlayers],
       ["Новых за сутки", s.newLast24Hours],
       ["Активных за сутки", s.activeLast24Hours],
       ...s.professions.flatMap((p) => [
@@ -165,7 +161,7 @@
 
   // ── Игроки ─────────────────────────────────────────────────────────
   async function loadPlayers() {
-    const params = new URLSearchParams({ offset, count: PAGE_SIZE, kind: $("kind").value });
+    const params = new URLSearchParams({ offset, count: PAGE_SIZE });
     const search = $("search").value.trim();
     if (search) params.set("search", search);
 
@@ -189,7 +185,7 @@
       const tr = document.createElement("tr");
       tr.className = "clickable" + (p.id === selectedId ? " selected" : "");
       cell(tr, p.nickname);
-      cell(tr, p.isRegistered ? p.email : "гость");
+      cell(tr, p.email);
       cell(tr, progressText(p.progress));
       cell(tr, fmt(p.createdAt));
       cell(tr, fmt(p.lastSeenAt));
@@ -210,8 +206,7 @@
     const p = r.result;
 
     $("details-title").textContent = `Игрок: ${p.nickname}`;
-    const account = p.isRegistered ? `почта ${p.email}, зарегистрирован ${fmt(p.registeredAt)}` : "гость";
-    $("details-meta").textContent = `${account} · id ${p.id} · создан ${fmt(p.createdAt)} · был в игре ${fmt(p.lastSeenAt)}`;
+    $("details-meta").textContent = `почта ${p.email} · id ${p.id} · зарегистрирован ${fmt(p.createdAt)} · был в игре ${fmt(p.lastSeenAt)}`;
 
     const table = document.createElement("table");
     table.innerHTML = "<thead><tr><th>Профессия</th><th>Уровень</th><th>Пройдено</th><th>Сложность</th><th>Ревизия</th><th>Сохранено</th></tr></thead>";

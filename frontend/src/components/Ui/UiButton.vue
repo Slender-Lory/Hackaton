@@ -5,7 +5,7 @@ const props = defineProps({
     theme: {
         type: String,
         default: 'action',
-        validator: (value) => ['action', 'ghost'].includes(value),
+        validator: (value) => ['action', 'ghost', 'danger', 'quiet'].includes(value),
     },
     type: {
         type: String,
@@ -89,6 +89,29 @@ const rootClass = computed(() => [
             @include hover {
                 border-color: $color-white;
                 background-color: rgba($color-white, 16%);
+            }
+        }
+    }
+
+    &--danger {
+        color: $color-white;
+        background-color: $color-danger-text;
+        box-shadow: $shadow-button;
+
+        &:not(:disabled) {
+            @include hover {
+                background-color: $color-danger;
+            }
+        }
+    }
+
+    &--quiet {
+        color: $color-ink;
+        background-color: $color-card-text-box;
+
+        &:not(:disabled) {
+            @include hover {
+                background-color: $color-white;
             }
         }
     }

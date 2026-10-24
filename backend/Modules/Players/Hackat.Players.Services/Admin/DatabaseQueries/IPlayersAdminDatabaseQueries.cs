@@ -1,4 +1,3 @@
-using Hackat.Players.Contracts.Admin;
 using Hackat.Players.Database.Entities;
 
 namespace Hackat.Players.Services.Admin.DatabaseQueries;
@@ -19,9 +18,9 @@ internal interface IPlayersAdminDatabaseQueries
 
 /// <param name="NicknameKey">Нормализованная часть никнейма (null — без поиска).</param>
 /// <param name="EmailPart">Часть почты в нижнем регистре.</param>
-internal sealed record PlayersSearch(string? NicknameKey, string? EmailPart, PlayerKind Kind)
+internal sealed record PlayersSearch(string? NicknameKey, string? EmailPart)
 {
-    public static readonly PlayersSearch Everyone = new(null, null, PlayerKind.All);
+    public static readonly PlayersSearch Everyone = new(null, null);
 }
 
 internal sealed record ProfessionAggregate(string ProfessionCode, int Started, int Completed, double AveragePercent);

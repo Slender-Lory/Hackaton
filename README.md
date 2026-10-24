@@ -93,9 +93,9 @@ cd frontend && npm install && npm run dev
 
 В Development backend отдаёт две страницы для проверки API без фронтенда:
 
-- http://localhost:8080/test/ — **игрок**: игра без регистрации (по никнейму), регистрация и вход по почте,
-  «вы вошли как …», для гостя — «сохранить прогресс» (регистрация) и вход в существующий аккаунт;
-- http://localhost:8080/test/admin.html — **администратор**: сводка, список всех игроков с поиском,
+- http://localhost:8080/test/ — **игрок**: игра без регистрации (гость в `localStorage`, можно задать тестовый
+  прогресс), регистрация и вход по почте с переносом прогресса гостя, профиль аккаунта, выход, удаление аккаунта;
+- http://localhost:8080/test/admin.html — **администратор**: сводка, список аккаунтов с поиском,
   карточка игрока с прогрессом и State. Логин/пароль — `ADMIN_LOGIN` / `ADMIN_PASSWORD`
   (в Development по умолчанию `admin` / `admin12345`).
 
@@ -108,7 +108,9 @@ Browser (Vue/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 ```
 
 - **Frontend** собирается Vite, отдаётся nginx'ом (SPA fallback → `index.html`, кэш ассетов).
-- **Прокси `/api`**: dev — Vite (`vite.config.js`), prod — nginx (`infra/nginx/nginx.conf`); префикс `/api` снимается, backend получает запросы как `/health`, `/api/v1/...`.
+- **Прокси `/api`**: dev — Vite (`vite.config.js`), prod — nginx (`infra/nginx/nginx.conf`); путь передаётся как есть:
+  браузер `/api/v1/players/login` → backend `/api/v1/players/login`. На фронте `http.post("/v1/players/login")`
+  с базой `VITE_API_URL=/api`. Health для фронта — `/api/health`, для healthcheck'ов compose — `/health`.
 - **Backend** — minimal API .NET 10: `/health` (liveness), `/ready` (readiness), `/api/v1/info`, Swagger в dev.
 - **CORS** — из `CORS_ORIGIN` (список через запятую), в docker — http://localhost:5173.
 - **БД** — PostgreSQL, инициализация SQL'ем из `infra/db/init/` при создании volume.
@@ -119,24 +121,28 @@ Browser (Vue/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 
 Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 
+Контракт для фронта со сценариями — [`docs/api.md`](docs/api.md); готовые TS-типы и функции
+(регистрация, вход, прогресс, гость в `localStorage`) — `frontend/src/shared/api/`.
+
 | Метод | Путь | Назначение | Ответ |
 |---|---|---|---|
 | GET | `/health` | liveness (healthcheck'и compose) | `{ status: "ok", service }` |
+| GET | `/api/health` | то же для фронта (через прокси `/api`) | `{ status: "ok", service }` |
 | GET | `/ready` | readiness: доступность БД; при `REQUIRE_DATABASE_URL=1` — ещё и наличие `DATABASE_URL` | `{ status: "ready" }` или 503 |
 | GET | `/api/v1/info` | имя, версия, окружение | `{ name, version, environment, date }` |
-| POST | `/api/v1/players/enter` | игра без регистрации `{ nickname }` — новый гость | `{ player, token, expiresAt }` |
-| POST | `/api/v1/players/register` | регистрация `{ email, password, nickname? }`; с токеном гостя — гость становится аккаунтом | `{ player, token, expiresAt }` |
-| POST | `/api/v1/players/login` | вход `{ email, password }`; с токеном гостя — перенос его прогресса | `{ player, token, expiresAt, transferredProfessions, discardedProfessions }` |
+| POST | `/api/v1/players/register` | регистрация `{ email, password, nickname, progress? }`; `progress` — прогресс гостя из `localStorage` | `{ player, token, expiresAt, importedProfessions, skippedProfessions }` |
+| POST | `/api/v1/players/login` | вход `{ email, password, progress? }`; прогресс гостя — в не начатые профессии | `{ player, token, expiresAt, importedProfessions, skippedProfessions }` |
 | POST | `/api/v1/players/logout` 🔒 | выход с этого устройства (токен перестаёт работать) | `true` |
+| DELETE | `/api/v1/players/me` 🔒 | удаление аккаунта `{ password }` — аккаунт, прогресс, все сессии | `true` |
 | GET | `/api/v1/players/me` 🔒 | профиль + прогресс по всем профессиям | `{ player, progress[] }` |
 | GET | `/api/v1/players/me/progress/{professionCode}` 🔒 | прогресс по профессии (`revision: 0` — не начата) | `ProgressModel` |
 | PUT | `/api/v1/players/me/progress/{professionCode}` 🔒 | сохранить `{ level, percent, difficulty, state, expectedRevision }` | `ProgressModel` |
 | POST | `/api/v1/admin/login` | вход администратора `{ login, password }` (10 попыток в минуту) | `{ token, expiresAt, login }` |
-| GET | `/api/v1/admin/players?search=&kind=&offset=&count=` 👑 | все игроки с кратким прогрессом; `kind`: `All` / `Guests` / `Registered`, поиск по нику или почте | `{ items, total, offset, count }` |
+| GET | `/api/v1/admin/players?search=&offset=&count=` 👑 | все аккаунты с кратким прогрессом, поиск по нику или почте | `{ items, total, offset, count }` |
 | GET | `/api/v1/admin/players/{id}` 👑 | карточка игрока: прогресс со State | `AdminPlayerDetailsModel` |
 | GET | `/api/v1/admin/stats` 👑 | всего игроков, новых/активных за сутки, прогресс по профессиям | `AdminStatsModel` |
 
-🔒 — нужен заголовок `Authorization: Player <token>` (токен из enter / register / login; старый префикс `Guest` тоже работает).
+🔒 — нужен заголовок `Authorization: Player <token>` (токен из register / login).
 👑 — нужен заголовок `Authorization: Bearer <token администратора>` (JWT с ролью `admin`, живёт 12 часов).
 Токены не взаимозаменяемы: токен игрока не открывает админку, админский — эндпоинты игрока.
 
@@ -145,27 +151,31 @@ Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 - JSON: camelCase, регистронезависимый парсинг.
 - Ответы контроллеров — `{ result, error }`. Ошибка: `error: { code, message }`, где `code` — 8-значный код из
   `AppErrorCodes` (первые 2 цифры — группа), `message` — текст для игрока; HTTP-статус соответствует коду
-  (400 форма, 401 нет входа / неверная почта или пароль, 409 почта занята / конфликт прогресса,
-  429 слишком много попыток входа). На фронте это `ApiError` (`client.js`).
+  (400 форма, 401 нет входа / неверная почта или пароль, 403 неверный пароль при удалении аккаунта,
+  409 почта занята / конфликт прогресса, 429 слишком много попыток). На фронте это `ApiError` (`core/api/client.js`).
 - CORS: заголовок задаётся переменной `CORS_ORIGIN` (несколько источников через запятую).
 
 ### Игроки и прогресс
 
-- **Гость** — игра без регистрации: `enter` с никнеймом создаёт игрока и сессию. Никнейм — только как
-  обращаться к игроку, он не уникален. Прогресс гостя хранится на сервере, но вернуться к нему можно только
-  из того же браузера (по токену в `localStorage`). Сессия гостя бессрочная; после «Выйти» доступ потерян.
-- **Аккаунт** — почта (уникальна без учёта регистра) и пароль от 8 символов, без подтверждения почты и без
-  восстановления пароля. Регистрация с токеном гостя превращает гостя в аккаунт той же записью — прогресс
-  остаётся. Сессия аккаунта — 30 дней с последнего использования, у каждого устройства своя.
-- **Вход в аккаунт из браузера гостя** — прогресс гостя переносится в профессии, не начатые в аккаунте
-  (`transferredProfessions`); где начаты оба — остаётся прогресс аккаунта (`discardedProfessions`). Гость удаляется.
+По ТЗ v2.0 (`docs/app-flow.md` — схема пути игрока):
+
+- **Гость** — только фронт: никнейм (не уникален) и прогресс лежат в `localStorage`, сервер о госте не знает.
+  Перезагрузка страницы прогресс не сбрасывает. С другого устройства гость начинает заново.
+- **Аккаунт** — почта (уникальна без учёта регистра, используется только для входа) и пароль от 8 символов,
+  без подтверждения почты и без восстановления пароля. Прогресс хранится на сервере и возвращается при входе
+  с любого устройства. Сессия — 30 дней с последнего использования, у каждого устройства своя.
+- **Перенос прогресса гостя.** «Сохранить прогресс» = `register` с полем `progress` (прогресс из `localStorage`):
+  аккаунт создаётся сразу с ним. `login` с `progress` переносит его в профессии, не начатые в аккаунте
+  (`importedProfessions`); где начаты — остаётся прогресс аккаунта (`skippedProfessions`).
+- **Удаление аккаунта** — `DELETE /players/me` с паролем: удаляются аккаунт, прогресс и сессии на всех устройствах.
 - **Безопасность.** Сервер хранит только SHA-256 токенов сессий и PBKDF2-хеш пароля (ASP.NET Core Identity).
-  Ошибка входа одна на «нет такой почты» и «неверный пароль». Регистрация и вход — не больше 10 попыток в минуту с IP.
-- **Хранение** — схема `players`: `Players` (никнейм, почта и хеш пароля у аккаунтов), `PlayerSessions`
-  (хеш токена, срок жизни) и `PlayerProgress` (одна строка на игрока и профессию: `Level`, `Percent`,
-  `Difficulty`, `State` jsonb, `Revision`).
-- **`State`** — произвольный JSON-объект игры (день, сцена, флаги диалогов), до 32 КБ. Формат определяет фронт,
-  новые сцены не требуют миграций.
+  Ошибка входа одна на «нет такой почты» и «неверный пароль». Регистрация, вход и удаление — не больше 10 попыток
+  в минуту с IP (`AUTH_RATE_LIMIT_PER_MINUTE`).
+- **Хранение** — схема `players`: `Players` (никнейм, почта, хеш пароля), `PlayerSessions` (хеш токена, срок жизни)
+  и `PlayerProgress` (одна строка на игрока и профессию: `Level`, `Percent`, `Difficulty`, `State` jsonb, `Revision`).
+  Удобно: `Level` — номер игрового дня, `Percent` — процент прохождения главы.
+- **`State`** — произвольный JSON-объект игры (день, сцена, счётчики выручки/репутации/здоровья поросят,
+  решения по пациентам), до 32 КБ. Формат определяет фронт, новые дни и пациенты не требуют миграций.
 - **Конфликты.** Каждое сохранение увеличивает `revision`; в `expectedRevision` передаётся последняя известная.
   Сохранение из устаревшей вкладки получит 409 `ProgressConflict` и не затрёт новые данные.
 - **Профессии** — `ProfessionCatalog` (сейчас `vet`).

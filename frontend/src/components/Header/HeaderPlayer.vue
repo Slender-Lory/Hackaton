@@ -1,5 +1,6 @@
 <script setup>
 import {computed} from 'vue';
+import {ROUTE_NAMES} from '@/core/constants';
 
 const props = defineProps({
     nickname: {type: String, required: true},
@@ -9,9 +10,10 @@ const initial = computed(() => props.nickname.trim().charAt(0).toUpperCase());
 </script>
 
 <template>
-    <span
+    <RouterLink
         class="header-player"
-        :title="nickname"
+        :to="{name: ROUTE_NAMES.profile}"
+        :title="`Профиль: ${nickname}`"
     >
         <span
             class="header-player__avatar"
@@ -20,5 +22,5 @@ const initial = computed(() => props.nickname.trim().charAt(0).toUpperCase());
             {{ initial }}
         </span>
         <span class="header-player__name">{{ nickname }}</span>
-    </span>
+    </RouterLink>
 </template>

@@ -17,6 +17,7 @@ export const router = createRouter({
             component: () => import('@/pages/ProloguePage.vue'),
         },
         {path: '/game/:profession', name: ROUTE_NAMES.game, component: () => import('@/pages/GamePage.vue')},
+        {path: '/profile', name: ROUTE_NAMES.profile, component: () => import('@/pages/ProfilePage.vue')},
         {path: '/:pathMatch(.*)*', redirect: {name: ROUTE_NAMES.professions}},
     ],
 });

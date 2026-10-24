@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Hackat.Common.Result;
 using Hackat.Common.Result.ErrorCodes;
@@ -35,12 +34,36 @@ internal sealed class ProgressService(
         return progress?.ToModel() ?? PlayersMapping.EmptyProgress(professionCode);
     }
 
+    public async Task<(string[] Imported, string[] Skipped)> ImportLocal(Guid playerId, LocalProgressForm[]? items)
+    {
+        if (items is null || items.Length == 0)
+            return ([], []);
+
+        var now = timeProvider.GetUtcNow();
+        var imported = await databaseQueries.AddMissing(playerId, items
+            .Select(u => new PlayerProgress
+            {
+                PlayerId = playerId,
+                ProfessionCode = u.ProfessionCode,
+                Level = u.Level,
+                Percent = u.Percent,
+                Difficulty = u.Difficulty,
+                State = u.State is { ValueKind: not JsonValueKind.Null } state ? state.GetRawText() : null,
+                Revision = 1,
+                UpdatedAt = now,
+            })
+            .ToArray());
+
+        var skipped = items.Select(u => u.ProfessionCode).Except(imported).ToArray();
+        return (imported, skipped);
+    }
+
     public async Task<AppResult<ProgressModel>> Save(Guid playerId, string professionCode, SaveProgressForm form)
     {
         if (!ProfessionCatalog.IsKnown(professionCode))
             return AppError.FromCodeWithArgs(AppErrorCodes.UnknownProfession, professionCode);
 
-        var stateError = ValidateState(form.State);
+        var stateError = ProgressRules.ValidateState(form.State);
         if (stateError is not null)
             return stateError;
 
@@ -83,19 +106,5 @@ internal sealed class ProgressService(
         return await databaseQueries.TrySaveChanges()
             ? progress.ToModel()
             : AppErrorCodes.ProgressConflict;
-    }
-
-    private static AppError? ValidateState(JsonElement? state)
-    {
-        if (state is not { } value || value.ValueKind == JsonValueKind.Null)
-            return null;
-
-        if (value.ValueKind != JsonValueKind.Object)
-            return AppError.FromCode(AppErrorCodes.InvalidForm, "State должен быть JSON-объектом");
-
-        if (Encoding.UTF8.GetByteCount(value.GetRawText()) > SaveProgressForm.MaxStateBytes)
-            return AppError.FromCode(AppErrorCodes.InvalidForm, "State слишком большой (максимум 32 КБ)");
-
-        return null;
     }
 }

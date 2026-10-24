@@ -4,15 +4,15 @@ import {NICKNAME_MAX_LENGTH} from '@/core/constants';
 import {useNicknameForm} from '@/composables/useNicknameForm';
 
 import UiButton from '@/components/Ui/UiButton.vue';
+import UiField from '@/components/Ui/UiField.vue';
 import UiModal from '@/components/Ui/UiModal.vue';
 
-const emit = defineEmits(['close', 'entered']);
+const emit = defineEmits(['close', 'entered', 'login']);
 
-const {nickname, errorMessage, isSubmitting, submit, resetError} = useNicknameForm(handleEntered);
+const {nickname, errorMessage, submit, resetError} = useNicknameForm(handleEntered);
 
-/** @param {import('@/core/types/player').Player} player */
-function handleEntered(player) {
-    emit('entered', player);
+function handleEntered() {
+    emit('entered');
 }
 </script>
 
@@ -26,94 +26,60 @@ function handleEntered(player) {
             class="nickname-form"
             @submit.prevent="submit"
         >
-            <label
-                class="nickname-form__label"
-                for="nickname-form-field"
-            >
-                Имя
-            </label>
-            <input
-                id="nickname-form-field"
+            <UiField
                 v-model="nickname"
-                :class="['nickname-form__field', {'nickname-form__field--error': errorMessage}]"
-                type="text"
+                label="Имя"
                 autocomplete="nickname"
-                :maxlength="NICKNAME_MAX_LENGTH"
                 placeholder="Например, Аня"
-                :aria-invalid="Boolean(errorMessage)"
-                aria-describedby="nickname-form-error"
+                :maxlength="NICKNAME_MAX_LENGTH"
+                :error="errorMessage"
                 autofocus
                 @input="resetError"
             />
-            <p
-                id="nickname-form-error"
-                class="nickname-form__error"
-                role="alert"
-            >
-                {{ errorMessage ?? '' }}
-            </p>
 
             <UiButton
                 type="submit"
                 large
                 fluid
-                :disabled="isSubmitting"
             >
                 <Play
                     :size="20"
                     aria-hidden="true"
                 />
-                {{ isSubmitting ? 'Открываем смену…' : 'Начать смену' }}
+                Начать смену
             </UiButton>
+
+            <p class="nickname-form__account">
+                Уже есть аккаунт?
+                <button
+                    class="nickname-form__link"
+                    type="button"
+                    @click="emit('login')"
+                >
+                    Войти по почте
+                </button>
+            </p>
         </form>
     </UiModal>
 </template>
 
 <style lang="scss">
 .nickname-form {
-    @include column($indent-step * 2);
+    @include column($indent-step * 4);
 
-    &__label {
-        color: $color-ink;
+    &__account {
+        text-align: center;
+        color: $color-ink-soft;
         font-size: $font-size-sm;
+    }
+
+    &__link {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        color: $color-ink;
         font-weight: $font-weight-semibold;
-    }
 
-    &__field {
-        width: 100%;
-        transition:
-            border-color $duration ease,
-            box-shadow $duration ease;
-        color: $color-ink;
-        border: 2px solid $color-card-text-box;
-        border-radius: $radius-button;
-        background-color: $color-card-text-box;
-        font: inherit;
-        font-size: $font-size-lg;
-
-        @include padding('y', 3);
-        @include padding('x', 4);
-
-        &::placeholder {
-            color: $color-ink-soft;
-        }
-
-        &:focus {
-            border-color: $color-accent;
-            outline: none;
-            box-shadow: 0 0 0 4px rgba($color-action, 45%);
-        }
-
-        &--error {
-            border-color: $color-danger;
-        }
-    }
-
-    &__error {
-        min-height: 1.5em;
-        color: $color-danger-text;
-        font-size: $font-size-sm;
-        font-weight: $font-weight-medium;
+        @include button-reset;
     }
 }
 </style>

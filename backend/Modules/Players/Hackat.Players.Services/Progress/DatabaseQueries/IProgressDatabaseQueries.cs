@@ -13,4 +13,10 @@ internal interface IProgressDatabaseQueries
 
     /// <summary>false — ревизия в БД изменилась после чтения (оптимистичная блокировка).</summary>
     Task<bool> TrySaveChanges();
+
+    /// <summary>
+    /// Добавляет записи для профессий, которых у игрока ещё нет; существующие не трогает.
+    /// Возвращает коды добавленных профессий.
+    /// </summary>
+    Task<string[]> AddMissing(Guid playerId, PlayerProgress[] items);
 }

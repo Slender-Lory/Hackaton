@@ -1,12 +1,16 @@
 <script setup>
 import {storeToRefs} from 'pinia';
-import {Stethoscope} from 'lucide-vue-next';
+import {LogIn, Stethoscope} from 'lucide-vue-next';
 import {ROUTE_NAMES} from '@/core/constants';
+import {AUTH_MODES, useAuthDialogStore} from '@/core/stores/authDialog';
 import {usePlayerStore} from '@/core/stores/player';
 
 import HeaderPlayer from '@/components/Header/HeaderPlayer.vue';
+import UiButton from '@/components/Ui/UiButton.vue';
 
-const {player} = storeToRefs(usePlayerStore());
+const authDialogStore = useAuthDialogStore();
+
+const {isSignedIn, isRestored, nickname} = storeToRefs(usePlayerStore());
 </script>
 
 <template>
@@ -22,9 +26,20 @@ const {player} = storeToRefs(usePlayerStore());
             Ветеринар
         </RouterLink>
         <HeaderPlayer
-            v-if="player"
-            :nickname="player.nickname"
+            v-if="isSignedIn"
+            :nickname="nickname"
         />
+        <UiButton
+            v-else-if="isRestored"
+            theme="ghost"
+            @click="authDialogStore.open(AUTH_MODES.login)"
+        >
+            <LogIn
+                :size="18"
+                aria-hidden="true"
+            />
+            Войти
+        </UiButton>
     </header>
 </template>
 
@@ -53,6 +68,9 @@ $avatar-size: 34px;
         display: flex;
         align-items: center;
         min-width: 0;
+        transition: background-color $duration ease;
+        text-decoration: none;
+        color: $color-on-playmat;
         border: 2px solid rgba($color-white, 25%);
         border-radius: $radius-chip;
         background-color: rgba($color-white, 10%);
@@ -61,6 +79,10 @@ $avatar-size: 34px;
         @include padding('y', 1);
         @include padding('left', 1);
         @include padding('right', 4);
+
+        @include hover {
+            background-color: rgba($color-white, 18%);
+        }
 
         &__avatar {
             flex-shrink: 0;

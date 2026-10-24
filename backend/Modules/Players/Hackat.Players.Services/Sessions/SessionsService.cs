@@ -7,8 +7,8 @@ internal sealed class SessionsService(
     ISessionsDatabaseQueries databaseQueries,
     TimeProvider timeProvider) : ISessionsService
 {
-    /// <summary>Сессия аккаунта живёт 30 дней с последнего использования.</summary>
-    public static readonly TimeSpan AccountSessionLifetime = TimeSpan.FromDays(30);
+    /// <summary>Сессия живёт 30 дней с последнего использования.</summary>
+    public static readonly TimeSpan Lifetime = TimeSpan.FromDays(30);
 
     /// <summary>Чтобы не писать в БД на каждый запрос, «последнее использование» обновляем не чаще раза в час.</summary>
     private static readonly TimeSpan _touchInterval = TimeSpan.FromHours(1);
@@ -21,19 +21,19 @@ internal sealed class SessionsService(
             return null;
 
         if (now - session.LastUsedAt > _touchInterval)
-            await databaseQueries.Touch(session.Id, now, ExpiresAt(session.Player.IsRegistered, now));
+            await databaseQueries.Touch(session.Id, now, now + Lifetime);
 
-        return new SessionInfo(session.Id, session.PlayerId, session.Player.IsRegistered);
+        return new SessionInfo(session.Id, session.PlayerId);
     }
 
     public Task Revoke(long sessionId) => databaseQueries.Delete(sessionId);
 
     /// <summary>Создаёт сессию для игрока и возвращает токен (показывается клиенту один раз).</summary>
-    internal async Task<(string Token, DateTimeOffset? ExpiresAt)> Create(Player player)
+    internal async Task<(string Token, DateTimeOffset ExpiresAt)> Create(Player player)
     {
         var now = timeProvider.GetUtcNow();
         var (token, hash) = SessionTokens.Generate();
-        var expiresAt = ExpiresAt(player.IsRegistered, now);
+        var expiresAt = now + Lifetime;
 
         await databaseQueries.Add(new PlayerSession
         {
@@ -46,7 +46,4 @@ internal sealed class SessionsService(
 
         return (token, expiresAt);
     }
-
-    private static DateTimeOffset? ExpiresAt(bool isRegistered, DateTimeOffset now) =>
-        isRegistered ? now + AccountSessionLifetime : null;
 }

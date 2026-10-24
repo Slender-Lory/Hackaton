@@ -18,7 +18,7 @@ public abstract class ApiControllerBase : ControllerBase
     protected SessionInfo? CurrentSession =>
         Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var playerId)
         && long.TryParse(User.FindFirstValue(PlayerAuthenticationHandler.SessionIdClaim), out var sessionId)
-            ? new SessionInfo(sessionId, playerId, User.FindFirstValue(PlayerAuthenticationHandler.RegisteredClaim) == "true")
+            ? new SessionInfo(sessionId, playerId)
             : null;
 
     /// <summary>Сессия для действий под [Authorize] — там она гарантированно есть.</summary>

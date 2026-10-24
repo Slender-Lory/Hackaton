@@ -9,8 +9,8 @@ using Microsoft.Extensions.Options;
 namespace Api.Auth;
 
 /// <summary>
-/// Схема «Player»: заголовок <c>Authorization: Player &lt;token&gt;</c> (старый префикс «Guest» тоже принимается).
-/// Токен — сессия устройства из enter / register / login; работает и для гостя, и для аккаунта.
+/// Схема «Player»: заголовок <c>Authorization: Player &lt;token&gt;</c>.
+/// Токен — сессия устройства из register / login (гости на сервер не ходят).
 /// </summary>
 public sealed class PlayerAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -21,20 +21,16 @@ public sealed class PlayerAuthenticationHandler(
 {
     public const string SchemeName = "Player";
     public const string SessionIdClaim = "sid";
-    public const string RegisteredClaim = "registered";
 
-    private static readonly string[] _prefixes = ["Player ", "Guest "];
+    private const string Prefix = SchemeName + " ";
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         string? header = Request.Headers.Authorization;
-        var prefix = header is null
-            ? null
-            : _prefixes.FirstOrDefault(p => header.StartsWith(p, StringComparison.OrdinalIgnoreCase));
-        if (prefix is null)
+        if (header is null || !header.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
             return AuthenticateResult.NoResult();
 
-        var token = header![prefix.Length..].Trim();
+        var token = header[Prefix.Length..].Trim();
         if (token.Length == 0)
             return AuthenticateResult.Fail("Empty session token");
 
@@ -46,7 +42,6 @@ public sealed class PlayerAuthenticationHandler(
             [
                 new Claim(ClaimTypes.NameIdentifier, session.PlayerId.ToString()),
                 new Claim(SessionIdClaim, session.SessionId.ToString()),
-                new Claim(RegisteredClaim, session.IsRegistered ? "true" : "false"),
             ],
             SchemeName);
 

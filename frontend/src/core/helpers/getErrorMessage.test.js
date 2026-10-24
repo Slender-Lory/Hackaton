@@ -4,20 +4,20 @@ import {getErrorMessage} from './getErrorMessage';
 
 describe('getErrorMessage', () => {
     it("берёт текст из error.message ответа backend'а", () => {
-        const body = JSON.stringify({result: null, error: {code: 10000001, message: 'Введите никнейм'}});
+        const body = JSON.stringify({result: null, error: {code: 20000003, message: 'Почта уже зарегистрирована'}});
 
-        expect(getErrorMessage(new ApiError(400, '/api/v1/players/enter', body))).toBe('Введите никнейм');
+        expect(getErrorMessage(new ApiError(409, '/api/v1/players/register', body))).toBe('Почта уже зарегистрирована');
     });
 
     it('сетевая ошибка — понятный текст', () => {
         expect(getErrorMessage(new ApiError(0, '/api/x', 'Failed to fetch'))).toBe('Нет связи с сервером');
     });
 
-    it('тело не JSON — код статуса', () => {
-        expect(getErrorMessage(new ApiError(502, '/api/x', '<html>'))).toBe('Ошибка 502');
+    it('тело не JSON — общий текст', () => {
+        expect(getErrorMessage(new ApiError(502, '/api/x', '<html>'))).toBe('Что-то пошло не так, попробуйте ещё раз');
     });
 
-    it('обычная ошибка — её текст', () => {
-        expect(getErrorMessage(new Error('boom'))).toBe('boom');
+    it('не ApiError — общий текст', () => {
+        expect(getErrorMessage(new Error('boom'))).toBe('Что-то пошло не так, попробуйте ещё раз');
     });
 });

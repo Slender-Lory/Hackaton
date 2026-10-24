@@ -20,7 +20,7 @@ public sealed class AdminTests
         _client = ApiFixture.Factory.CreateClient();
         _admin = new AdminApi(_client);
         _players = new PlayersApi(_client);
-        // Один вход на все тесты класса: вход ограничен 10 попытками в минуту.
+        // Один вход на все тесты класса — токен живёт 12 часов.
         _adminToken ??= await _admin.LoginAsAdmin();
     }
 
@@ -48,17 +48,17 @@ public sealed class AdminTests
     }
 
     [Test]
-    public async Task AdminEndpoints_WithGuestToken_AreUnauthorized()
+    public async Task AdminEndpoints_WithPlayerToken_AreUnauthorized()
     {
-        var (_, guestToken) = await _players.NewGuest();
+        var (_, _, playerToken) = await _players.NewAccount();
 
-        var response = await _admin.Players(new AuthenticationHeaderValue("Guest", guestToken));
+        var response = await _admin.Players(new AuthenticationHeaderValue("Player", playerToken));
 
         Assert.That(response.Status, Is.EqualTo(HttpStatusCode.Unauthorized), response.Raw);
     }
 
     [Test]
-    public async Task GuestEndpoints_WithAdminToken_AreUnauthorized()
+    public async Task PlayerEndpoints_WithAdminToken_AreUnauthorized()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/players/me");
         request.Headers.Authorization = AdminAuth;
@@ -81,7 +81,7 @@ public sealed class AdminTests
     [Test]
     public async Task Players_ShowsPlayerWithProgress_AndSearchFindsIt()
     {
-        var (created, token) = await _players.NewGuest();
+        var (created, _, token) = await _players.NewAccount();
         await _players.SaveProgress(token, ProfessionCatalog.Veterinarian, new { level = 2, percent = 40, expectedRevision = 0 });
 
         var response = await _admin.Players(AdminAuth, search: created.Player.Nickname.ToUpperInvariant());
@@ -106,30 +106,25 @@ public sealed class AdminTests
         Assert.That(response.Status, Is.EqualTo(HttpStatusCode.OK), response.Raw);
         var item = response.Body.Result!.Items.Single();
         Assert.That(item.Id, Is.EqualTo(account.Player.Id));
-        Assert.That(item.IsRegistered, Is.True);
         Assert.That(item.Email, Is.EqualTo(email));
-        Assert.That(item.RegisteredAt, Is.Not.Null);
     }
 
     [Test]
-    public async Task Players_KindFilter_SeparatesGuestsAndAccounts()
+    public async Task DeletedAccount_DisappearsFromAdmin()
     {
-        var (guest, _) = await _players.NewGuest();
-        var (account, _, _) = await _players.NewAccount();
+        var (account, _, token) = await _players.NewAccount();
+        await _players.DeleteAccount(token);
 
-        var guests = (await _admin.Players(AdminAuth, kind: "Guests", count: 100)).Body.Result!.Items;
-        var registered = (await _admin.Players(AdminAuth, kind: "Registered", count: 100)).Body.Result!.Items;
+        var response = await _admin.Player(AdminAuth, account.Player.Id);
 
-        Assert.That(guests.Select(u => u.Id), Does.Contain(guest.Player.Id).And.Not.Contain(account.Player.Id));
-        Assert.That(registered.Select(u => u.Id), Does.Contain(account.Player.Id).And.Not.Contain(guest.Player.Id));
-        Assert.That(guests, Has.All.Matches<Hackat.Players.Contracts.Admin.AdminPlayerListItemModel>(u => !u.IsRegistered));
+        Assert.That(response.Status, Is.EqualTo(HttpStatusCode.NotFound), response.Raw);
     }
 
     [Test]
     public async Task Players_Paging_RespectsCount()
     {
-        await _players.NewGuest();
-        await _players.NewGuest();
+        await _players.NewAccount();
+        await _players.NewAccount();
 
         var response = await _admin.Players(AdminAuth, count: 1);
 
@@ -141,7 +136,7 @@ public sealed class AdminTests
     [Test]
     public async Task PlayerDetails_IncludeState()
     {
-        var (created, token) = await _players.NewGuest();
+        var (created, _, token) = await _players.NewAccount();
         await _players.SaveProgress(token, ProfessionCatalog.Veterinarian,
             new { level = 1, percent = 10, state = new { scene = "farm" }, expectedRevision = 0 });
 
@@ -165,7 +160,7 @@ public sealed class AdminTests
     public async Task Stats_CountNewPlayersAndProgress()
     {
         var before = (await _admin.Stats(AdminAuth)).Body.Result!;
-        var (_, token) = await _players.NewGuest();
+        var (_, _, token) = await _players.NewAccount();
         await _players.SaveProgress(token, ProfessionCatalog.Veterinarian, new { level = 5, percent = 100, expectedRevision = 0 });
         await _players.NewAccount();
 
@@ -173,7 +168,6 @@ public sealed class AdminTests
 
         // Тесты идут параллельно с другими классами, поэтому проверяем «не меньше».
         Assert.That(after.TotalPlayers, Is.GreaterThanOrEqualTo(before.TotalPlayers + 2));
-        Assert.That(after.RegisteredPlayers, Is.GreaterThanOrEqualTo(before.RegisteredPlayers + 1));
         Assert.That(after.NewLast24Hours, Is.GreaterThanOrEqualTo(before.NewLast24Hours + 1));
         var vetBefore = before.Professions.Single(u => u.ProfessionCode == ProfessionCatalog.Veterinarian);
         var vetAfter = after.Professions.Single(u => u.ProfessionCode == ProfessionCatalog.Veterinarian);
@@ -184,8 +178,8 @@ public sealed class AdminTests
     [Test]
     public async Task Login_TooManyAttempts_IsRateLimited()
     {
-        // Отдельный экземпляр API — чтобы не исчерпать лимит остальным тестам.
-        await using var factory = ApiFixture.CreateFactory();
+        // Отдельный экземпляр API с настоящим лимитом (10 в минуту).
+        await using var factory = ApiFixture.CreateFactory(authRateLimitPerMinute: 10);
         using var client = factory.CreateClient();
         var admin = new AdminApi(client);
 

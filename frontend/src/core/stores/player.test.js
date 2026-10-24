@@ -1,30 +1,46 @@
 import {createPinia, setActivePinia} from 'pinia';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {enterPlayer, fetchProfile} from '@/core/api/players';
+import * as playersApi from '@/core/api/players';
+import {getGuest} from '@/core/helpers/guestStorage';
 import {usePlayerStore} from './player';
 
 vi.mock('@/core/api/players', () => ({
-    enterPlayer: vi.fn(),
-    fetchProfile: vi.fn(),
+    restoreSession: vi.fn(),
+    register: vi.fn(),
+    registerFromGuest: vi.fn(),
+    login: vi.fn(),
+    loginFromGuest: vi.fn(),
+    getProfile: vi.fn(),
+    logout: vi.fn(),
+    deleteAccount: vi.fn(),
 }));
 
-const PLAYER = {id: '1', nickname: 'Аня', isRegistered: false, email: null, createdAt: ''};
+const ACCOUNT = {id: '1', nickname: 'Аня', email: 'anya@example.com', createdAt: ''};
+const PROFILE = {
+    player: ACCOUNT,
+    progress: [
+        {professionCode: 'vet', level: 2, percent: 35, revision: 3},
+        {professionCode: 'agro', level: 0, percent: 0, revision: 0},
+    ],
+};
+
+function stubLocalStorage() {
+    const data = {};
+    vi.stubGlobal('localStorage', {
+        getItem: (key) => data[key] ?? null,
+        setItem: (key, value) => {
+            data[key] = value;
+        },
+        removeItem: (key) => {
+            delete data[key];
+        },
+    });
+}
 
 describe('usePlayerStore', () => {
     beforeEach(() => {
         setActivePinia(createPinia());
-        vi.stubGlobal('localStorage', {
-            data: {},
-            getItem(key) {
-                return this.data[key] ?? null;
-            },
-            setItem(key, value) {
-                this.data[key] = value;
-            },
-            removeItem(key) {
-                delete this.data[key];
-            },
-        });
+        stubLocalStorage();
     });
 
     afterEach(() => {
@@ -32,35 +48,45 @@ describe('usePlayerStore', () => {
         vi.clearAllMocks();
     });
 
-    it('без токена профиль не запрашивает', async () => {
-        await usePlayerStore().loadProfile();
-
-        expect(fetchProfile).not.toHaveBeenCalled();
-    });
-
-    it('вход сохраняет игрока и токен', async () => {
-        enterPlayer.mockResolvedValue({player: PLAYER, token: 'secret', expiresAt: null});
+    it('без сессии на сервере поднимает гостя из браузера', async () => {
+        playersApi.restoreSession.mockResolvedValue(null);
+        localStorage.setItem('hackat.guest', JSON.stringify({nickname: 'Гость', progress: {}}));
         const store = usePlayerStore();
 
-        await store.enter('  Аня ');
+        await store.restore();
 
-        expect(enterPlayer).toHaveBeenCalledWith('Аня');
+        expect(store.isGuest).toBe(true);
+        expect(store.nickname).toBe('Гость');
+    });
+
+    it('гость сохраняется только в браузере', () => {
+        const store = usePlayerStore();
+
+        store.startAsGuest('  Аня  ');
+
         expect(store.isSignedIn).toBe(true);
-        expect(localStorage.getItem('hackat.token')).toBe('secret');
+        expect(getGuest()).toEqual({nickname: 'Аня', progress: {}});
+        expect(playersApi.register).not.toHaveBeenCalled();
     });
 
-    it('процент только у начатой профессии', async () => {
-        localStorage.setItem('hackat.token', 'secret');
-        fetchProfile.mockResolvedValue({
-            player: PLAYER,
-            progress: [
-                {professionCode: 'vet', percent: 35, revision: 2},
-                {professionCode: 'agro', percent: 0, revision: 0},
-            ],
-        });
+    it('регистрация гостя переносит его прогресс и стирает гостя', async () => {
+        playersApi.registerFromGuest.mockResolvedValue({skippedProfessions: []});
+        playersApi.getProfile.mockResolvedValue(PROFILE);
+        const store = usePlayerStore();
+        store.startAsGuest('Аня');
+
+        await store.register({email: 'anya@example.com', password: 'secret-123'});
+
+        expect(playersApi.registerFromGuest).toHaveBeenCalledWith('anya@example.com', 'secret-123', undefined);
+        expect(store.isAccount).toBe(true);
+        expect(store.guest).toBeNull();
+    });
+
+    it('процент только у начатой профессии аккаунта', async () => {
+        playersApi.restoreSession.mockResolvedValue(PROFILE);
         const store = usePlayerStore();
 
-        await store.loadProfile();
+        await store.restore();
 
         expect(store.getPercent('vet')).toBe(35);
         expect(store.getPercent('agro')).toBeNull();
