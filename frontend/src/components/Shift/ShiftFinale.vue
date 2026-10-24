@@ -1,6 +1,6 @@
 <script setup>
 import {computed} from 'vue';
-import {Layers, Play, RotateCcw} from 'lucide-vue-next';
+import {Check, Layers, Play, RotateCcw, Sprout} from 'lucide-vue-next';
 import {COUNTER_LABELS} from '@/core/data/shifts';
 import {formatRubles} from '@/core/utils/format';
 
@@ -15,6 +15,8 @@ const props = defineProps({
     nextShift: {type: Object, default: null},
     /** @type {import('vue').PropType<import('@/core/types/shift').ChapterEnding | null>} */
     ending: {type: Object, default: null},
+    /** @type {import('vue').PropType<import('@/core/utils/review').ChapterReview | null>} */
+    review: {type: Object, default: null},
 });
 
 const emit = defineEmits(['next', 'restart', 'leave']);
@@ -51,6 +53,54 @@ const results = computed(() => [
                 <dd class="shift-finale__value">{{ result.value }}</dd>
             </div>
         </dl>
+
+        <section
+            v-if="review"
+            class="shift-finale__review"
+            aria-label="Итог главы"
+        >
+            <p class="shift-finale__praise">{{ review.praise }}</p>
+            <div
+                v-if="review.strengths.length"
+                class="shift-finale__group"
+            >
+                <h3 class="shift-finale__group-title">Что получилось</h3>
+                <ul class="shift-finale__list">
+                    <li
+                        v-for="item in review.strengths"
+                        :key="item"
+                        class="shift-finale__item"
+                    >
+                        <Check
+                            class="shift-finale__item-icon"
+                            :size="18"
+                            aria-hidden="true"
+                        />
+                        {{ item }}
+                    </li>
+                </ul>
+            </div>
+            <div
+                v-if="review.growth.length"
+                class="shift-finale__group"
+            >
+                <h3 class="shift-finale__group-title">Что можно сделать иначе</h3>
+                <ul class="shift-finale__list">
+                    <li
+                        v-for="item in review.growth"
+                        :key="item"
+                        class="shift-finale__item"
+                    >
+                        <Sprout
+                            class="shift-finale__item-icon shift-finale__item-icon--growth"
+                            :size="18"
+                            aria-hidden="true"
+                        />
+                        {{ item }}
+                    </li>
+                </ul>
+            </div>
+        </section>
 
         <p
             v-if="nextShift"
@@ -96,6 +146,55 @@ const results = computed(() => [
 
 <style lang="scss">
 .shift-finale {
+    &__review {
+        border-radius: $radius-card-inner;
+        background-color: $color-card-text-box;
+
+        @include column($indent-step * 4);
+        @include padding('y', 4);
+        @include padding('x', 4);
+    }
+
+    &__praise {
+        font-size: $font-size-md;
+        font-weight: $font-weight-semibold;
+        line-height: 1.5;
+    }
+
+    &__group {
+        @include column($indent-step * 2);
+    }
+
+    &__group-title {
+        font-size: $font-size-sm;
+        font-weight: $font-weight-bold;
+    }
+
+    &__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        @include column($indent-step * 2);
+    }
+
+    &__item {
+        display: flex;
+        align-items: flex-start;
+        font-size: $font-size-sm;
+        line-height: 1.4;
+        gap: $indent-step * 2;
+    }
+
+    &__item-icon {
+        flex-shrink: 0;
+        color: $color-accent;
+
+        &--growth {
+            color: $color-action-deep;
+        }
+    }
+
     align-items: flex-start;
     color: $color-ink;
 

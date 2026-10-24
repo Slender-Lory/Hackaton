@@ -41,6 +41,7 @@ const {
     nextShift,
     morningEvents,
     chapterEnding,
+    chapterReview,
     hasProgress,
     needsDifficulty,
     shiftHint,
@@ -172,6 +173,7 @@ function handleReset() {
                         :counters="counters"
                         :next-shift="nextShift"
                         :ending="chapterEnding"
+                        :review="chapterReview"
                         @next="startNextShift"
                         @restart="isResetFormOpen = true"
                         @leave="leaveGame"
