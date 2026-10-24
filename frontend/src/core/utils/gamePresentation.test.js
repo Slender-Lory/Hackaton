@@ -1,7 +1,42 @@
 import {describe, expect, it} from 'vitest';
 import {DIFFICULTIES} from '@/core/constants';
 import {shifts} from '@/core/data/shifts';
-import {getPassportPrompt, getShiftGuidance, isPatientPresent, personalizeDialogue} from './gamePresentation';
+import {
+    getNextActivity,
+    getPassportPrompt,
+    getShiftGuidance,
+    isPatientPresent,
+    personalizeDialogue,
+} from './gamePresentation';
+
+describe('следующее дело смены', () => {
+    const activities = [
+        {code: 'farm', roomCode: 'garage'},
+        {code: 'dog', roomCode: 'exam'},
+        {code: 'queue', roomCode: 'reception', kind: 'triage'},
+    ];
+    const rooms = ['garage', 'exam', 'reception'];
+
+    it('показывает ферму, когда остальные дела закрыты', () => {
+        expect(getNextActivity(activities, {farm: 'new', dog: 'locked', queue: 'locked'}, rooms)?.code).toBe('farm');
+    });
+
+    it('сначала предлагает продолжить начатое дело', () => {
+        expect(getNextActivity(activities, {farm: 'started', dog: 'new', queue: 'new'}, rooms)?.code).toBe('farm');
+    });
+
+    it('после завершения выбирает доступное дело в порядке комнат на плане', () => {
+        expect(getNextActivity(activities, {farm: 'done', dog: 'new', queue: 'locked'}, rooms)?.code).toBe('dog');
+        expect(getNextActivity(activities, {farm: 'new', dog: 'new', queue: 'new'}, rooms)?.kind).toBe('triage');
+    });
+
+    it('не предлагает закрытые комнаты и завершённые дела', () => {
+        expect(
+            getNextActivity(activities, {farm: 'new', dog: 'done', queue: 'locked'}, ['exam', 'reception']),
+        ).toBeNull();
+        expect(getNextActivity([], {}, rooms)).toBeNull();
+    });
+});
 
 describe('обращение к игроку', () => {
     it('вставляет ник только в предусмотренных репликах', () => {

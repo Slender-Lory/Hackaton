@@ -3,7 +3,7 @@ import {storeToRefs} from 'pinia';
 import {computed, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import {ArrowLeft, ClipboardList, RotateCcw} from 'lucide-vue-next';
-import {getShiftGuidance, isPatientPresent} from '@/core/utils/gamePresentation';
+import {getNextActivity, getShiftGuidance, isPatientPresent} from '@/core/utils/gamePresentation';
 import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
@@ -63,6 +63,21 @@ const hasPatient = computed(() => activeActivity.value?.kind !== 'triage' && isP
 const guidance = computed(() => getShiftGuidance(shift.value, state.value?.difficulty));
 
 const profession = computed(() => professions.find((item) => item.code === professionCode.value));
+const nextActivity = computed(() =>
+    getNextActivity(shift.value?.activities ?? [], activityStatuses.value, openRoomCodes.value),
+);
+const shiftCard = computed(() => {
+    if (!profession.value) return null;
+
+    const activity = isShiftFinished.value ? null : nextActivity.value;
+
+    return {
+        ...profession.value,
+        patient: activity && activity.kind !== 'triage' ? activity.patient : null,
+        kind: activity ? `Далее: ${activity.patient.passport.species}` : 'Итоги смены',
+        tagline: activity ? `${activity.title} · ${activity.place}` : 'Все доступные дела смены завершены.',
+    };
+});
 
 watch([isRestored, state], leaveIfCannotPlay, {immediate: true});
 
@@ -214,9 +229,9 @@ function handleReset() {
                     </template>
                 </div>
                 <ProfessionCard
-                    v-if="profession"
+                    v-if="shiftCard"
                     class="game-page__card"
-                    :profession="profession"
+                    :profession="shiftCard"
                     :percent="playerStore.getPercent(profession.code)"
                     is-patient-sick
                 />
@@ -343,6 +358,7 @@ $card-width: 320px;
             flex-shrink: 0;
             margin-top: $indent-step;
         }
+
         
         h2 {
             margin-bottom: $indent-step * 2;

@@ -1,4 +1,14 @@
 import {getHint} from '@/core/utils/shift';
+import {clinicRooms} from '@/core/data/clinic';
+
+export function getNextActivity(activities, statuses, openRoomCodes) {
+    const available = clinicRooms
+        .filter((room) => openRoomCodes.includes(room.code))
+        .map((room) => activities.find((activity) => activity.roomCode === room.code))
+        .filter((activity) => activity && ['new', 'started'].includes(statuses[activity.code]));
+
+    return available.find((activity) => statuses[activity.code] === 'started') ?? available[0] ?? null;
+}
 
 export function personalizeDialogue(text, nickname) {
     const name = typeof nickname === 'string' ? nickname.trim() : '';
