@@ -3,9 +3,13 @@ import {
     applyEffects,
     getChapterPercent,
     getChecklistBudget,
+    getLockedOptions,
     getOpenStepIndex,
     getStepResult,
+    getStoryVariant,
     getUnaffordableOptionIds,
+    meetsConditions,
+    startShift,
 } from './shift';
 
 /** @type {import('@/core/types/shift').ChecklistStep} */
@@ -113,5 +117,91 @@ describe('getChapterPercent', () => {
     it('считает долю главы по сменам и делам', () => {
         expect(getChapterPercent({shiftNumber: 1, completedCount: 1, activityCount: 2, shiftCount: 3})).toBe(17);
         expect(getChapterPercent({shiftNumber: 2, completedCount: 0, activityCount: 2, shiftCount: 3})).toBe(33);
+    });
+});
+
+/** @type {import('@/core/types/shift').ShiftState} */
+const STATE = {
+    version: 1,
+    shift: 1,
+    counters: {revenue: 1000, reputation: 40, pigHealth: 65},
+    completedActivities: [],
+    answers: {farm: {treatment: 'quarantine', exam: ['mouth', 'hooves']}},
+    morning: {},
+};
+
+describe('meetsConditions', () => {
+    it('проверяет счётчик в границах включительно', () => {
+        expect(meetsConditions([{counter: 'pigHealth', min: 65, max: 70}], STATE)).toBe(true);
+        expect(meetsConditions([{counter: 'reputation', min: 50}], STATE)).toBe(false);
+    });
+
+    it('проверяет ответ, в том числе выбранную процедуру', () => {
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'treatment', is: ['quarantine']}}], STATE)).toBe(
+            true,
+        );
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'exam', is: ['hooves']}}], STATE)).toBe(true);
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'diagnosis', is: ['fmd']}}], STATE)).toBe(false);
+    });
+
+    it('без условий — выполнено', () => {
+        expect(meetsConditions(undefined, STATE)).toBe(true);
+    });
+});
+
+describe('getStoryVariant', () => {
+    const step = {
+        kind: 'story',
+        id: 'outcome',
+        title: '',
+        text: '',
+        variants: [
+            {id: 'saved', when: [{counter: 'pigHealth', min: 70}], title: '', text: '', effects: {reputation: 20}},
+            {id: 'lost', title: '', text: '', effects: {reputation: -20}},
+        ],
+    };
+
+    it('до ответа выбирает подходящий вариант', () => {
+        expect(getStoryVariant(step, STATE, null)?.id).toBe('lost');
+    });
+
+    it('после ответа держится за показанный вариант и его эффект', () => {
+        expect(getStoryVariant(step, STATE, 'saved')?.id).toBe('saved');
+        expect(getStepResult(step, 'saved').effects).toEqual({reputation: 20});
+    });
+});
+
+describe('getLockedOptions', () => {
+    it('закрывает варианты без нужной репутации и объясняет почему', () => {
+        const options = [
+            {id: 'persuade', requires: [{counter: 'reputation', min: 50}], lockedText: 'Не доверяет', effects: {}},
+            {id: 'skip', effects: {}},
+        ];
+
+        expect(getLockedOptions(options, STATE)).toEqual({persuade: 'Не доверяет'});
+    });
+});
+
+describe('startShift', () => {
+    it('применяет подходящие утренние события и запоминает их', () => {
+        const shift = {
+            number: 2,
+            morning: [
+                {id: 'always', text: '', effects: {pigHealth: -10}},
+                {id: 'popular', when: [{counter: 'reputation', min: 55}], text: '', effects: {revenue: 1000}},
+                {
+                    id: 'quarantine',
+                    when: [{answer: {activity: 'farm', step: 'treatment', is: ['quarantine']}}],
+                    text: '',
+                },
+            ],
+            activities: [],
+        };
+
+        const next = startShift(STATE, shift);
+
+        expect(next.shift).toBe(2);
+        expect(next.counters).toEqual({revenue: 1000, reputation: 40, pigHealth: 55});
+        expect(next.morning).toEqual({2: ['always', 'quarantine']});
     });
 });

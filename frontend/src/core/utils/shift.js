@@ -6,6 +6,11 @@
 /** @typedef {import('@/core/types/shift').StepAnswer} StepAnswer */
 /** @typedef {import('@/core/types/shift').ActivityAnswers} ActivityAnswers */
 /** @typedef {import('@/core/types/shift').StepResult} StepResult */
+/** @typedef {import('@/core/types/shift').Condition} Condition */
+/** @typedef {import('@/core/types/shift').StoryStep} StoryStep */
+/** @typedef {import('@/core/types/shift').StoryVariant} StoryVariant */
+/** @typedef {import('@/core/types/shift').Shift} Shift */
+/** @typedef {import('@/core/types/shift').ShiftState} ShiftState */
 
 const PERCENT_MAX = 100;
 
@@ -114,7 +119,103 @@ export function getStepResult(step, answer) {
         return {effects: option?.effects ?? {}, feedback: option?.feedback ?? ''};
     }
 
+    if (step.variants) {
+        const variant = step.variants.find((item) => item.id === answer);
+
+        return {effects: variant?.effects ?? {}, feedback: ''};
+    }
+
     return {effects: step.effects ?? {}, feedback: ''};
+}
+
+/**
+ * @param {Condition} condition
+ * @param {ShiftState} state
+ * @returns {boolean}
+ */
+function meetsCondition({counter, min = -Infinity, max = Infinity, answer}, state) {
+    if (counter && (state.counters[counter] < min || state.counters[counter] > max)) {
+        return false;
+    }
+
+    if (!answer) {
+        return true;
+    }
+
+    const given = state.answers[answer.activity]?.[answer.step];
+    const givenIds = Array.isArray(given) ? given : [given];
+
+    return givenIds.some((id) => answer.is.includes(id));
+}
+
+/**
+ * @param {readonly Condition[] | undefined} conditions
+ * @param {ShiftState} state
+ * @returns {boolean}
+ */
+export function meetsConditions(conditions, state) {
+    return (conditions ?? []).every((condition) => meetsCondition(condition, state));
+}
+
+/**
+ * Первый элемент, чьи условия when выполнены: вариант сцены, финал главы.
+ * @template {{when?: Condition[]}} T
+ * @param {readonly T[]} items
+ * @param {ShiftState} state
+ * @returns {T | null}
+ */
+export function pickByConditions(items, state) {
+    return items.find((item) => meetsConditions(item.when, state)) ?? null;
+}
+
+/**
+ * Вариант сцены: уже показанный, если на шаг ответили, иначе — подходящий сейчас.
+ * @param {StoryStep} step
+ * @param {ShiftState} state
+ * @param {StepAnswer | null} answer
+ * @returns {StoryVariant | null}
+ */
+export function getStoryVariant(step, state, answer) {
+    if (!step.variants) {
+        return null;
+    }
+
+    if (answer !== null) {
+        return step.variants.find((variant) => variant.id === answer) ?? null;
+    }
+
+    return pickByConditions(step.variants, state);
+}
+
+/**
+ * Варианты выбора, закрытые условиями: id → почему закрыт.
+ * @param {readonly ChoiceOption[]} options
+ * @param {ShiftState} state
+ * @returns {Record<string, string>}
+ */
+export function getLockedOptions(options, state) {
+    return Object.fromEntries(
+        options
+            .filter((option) => !meetsConditions(option.requires, state))
+            .map((option) => [option.id, option.lockedText ?? 'Сейчас недоступно']),
+    );
+}
+
+/**
+ * Начало смены: утренние события проверяются по итогам прошлого дня и применяются один раз.
+ * @param {ShiftState} state
+ * @param {Shift} shift
+ * @returns {ShiftState}
+ */
+export function startShift(state, shift) {
+    const events = (shift.morning ?? []).filter((event) => meetsConditions(event.when, state));
+
+    return {
+        ...state,
+        shift: shift.number,
+        counters: applyEffects(state.counters, mergeEffects(...events.map((event) => event.effects ?? {}))),
+        morning: {...state.morning, [shift.number]: events.map((event) => event.id)},
+    };
 }
 
 /**

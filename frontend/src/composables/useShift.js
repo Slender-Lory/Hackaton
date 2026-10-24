@@ -2,30 +2,45 @@ import {storeToRefs} from 'pinia';
 import {computed, ref, watch} from 'vue';
 import {isApiError} from '@/core/api/players';
 import {ERROR_CODES, SHIFT_COUNT} from '@/core/constants';
-import {START_COUNTERS, shifts} from '@/core/data/shifts';
+import {START_COUNTERS, chapterEndings, shifts} from '@/core/data/shifts';
 import {getErrorMessage} from '@/core/helpers/getErrorMessage';
 import {usePlayerStore} from '@/core/stores/player';
 import {useToastStore} from '@/core/stores/toast';
-import {applyEffects, getChapterPercent, getStepResult, isActivityFinished} from '@/core/utils/shift';
+import {
+    applyEffects,
+    getChapterPercent,
+    getStepResult,
+    isActivityFinished,
+    pickByConditions,
+    startShift,
+} from '@/core/utils/shift';
 
 /** @typedef {import('@/core/types/shift').ShiftState} ShiftState */
 /** @typedef {import('@/core/types/shift').ShiftStep} ShiftStep */
 /** @typedef {import('@/core/types/shift').StepAnswer} StepAnswer */
 /** @typedef {import('@/core/types/shift').ActivityAnswers} ActivityAnswers */
+/** @typedef {import('@/core/types/shift').Shift} Shift */
 
 const SHIFT_STATE_VERSION = 1;
 const FIRST_SHIFT = 1;
 const CONFLICT_MESSAGE = 'Игра открыта в другой вкладке: продолжаем с её сохранения';
 
-/** @returns {ShiftState} */
-function createShiftState() {
-    return {
+/**
+ * @param {readonly Shift[]} chapter
+ * @returns {ShiftState}
+ */
+function createShiftState(chapter) {
+    const state = {
         version: SHIFT_STATE_VERSION,
         shift: FIRST_SHIFT,
         counters: {...START_COUNTERS},
         completedActivities: [],
         answers: {},
+        morning: {},
     };
+    const firstShift = chapter.find((item) => item.number === FIRST_SHIFT);
+
+    return firstShift ? startShift(state, firstShift) : state;
 }
 
 /**
@@ -34,6 +49,15 @@ function createShiftState() {
  */
 function isShiftState(value) {
     return value?.version === SHIFT_STATE_VERSION;
+}
+
+/**
+ * Сохранения первой смены были без morning.
+ * @param {ShiftState} state
+ * @returns {ShiftState}
+ */
+function normalizeShiftState(state) {
+    return {...state, morning: state.morning ?? {}};
 }
 
 /** @param {import('vue').Ref<string>} professionCode */
@@ -47,8 +71,10 @@ export function useShift(professionCode) {
     /** @type {import('vue').Ref<string | null>} */
     const activeActivityCode = ref(null);
 
-    const shift = computed(
-        () => shifts[professionCode.value]?.find((item) => item.number === state.value?.shift) ?? null,
+    const chapter = computed(() => shifts[professionCode.value] ?? []);
+    const shift = computed(() => chapter.value.find((item) => item.number === state.value?.shift) ?? null);
+    const nextShift = computed(
+        () => chapter.value.find((item) => item.number === (state.value?.shift ?? 0) + 1) ?? null,
     );
     const counters = computed(() => state.value?.counters ?? START_COUNTERS);
     const completedActivities = computed(() => state.value?.completedActivities ?? []);
@@ -63,6 +89,18 @@ export function useShift(professionCode) {
     const isShiftFinished = computed(
         () => shift.value?.activities.every((activity) => completedActivities.value.includes(activity.code)) ?? false,
     );
+    const morningEvents = computed(() => {
+        const firedIds = state.value?.morning[shift.value?.number] ?? [];
+
+        return (shift.value?.morning ?? []).filter((event) => firedIds.includes(event.id));
+    });
+    const chapterEnding = computed(() => {
+        if (!state.value || !isShiftFinished.value || nextShift.value) {
+            return null;
+        }
+
+        return pickByConditions(chapterEndings[professionCode.value] ?? [], state.value);
+    });
 
     watch([isRestored, professionCode], loadState, {immediate: true});
 
@@ -72,7 +110,7 @@ export function useShift(professionCode) {
         }
 
         const saved = playerStore.getProgressState(professionCode.value);
-        state.value = isShiftState(saved) ? saved : createShiftState();
+        state.value = isShiftState(saved) ? normalizeShiftState(saved) : createShiftState(chapter.value);
     }
 
     /**
@@ -130,16 +168,29 @@ export function useShift(professionCode) {
         persist();
     }
 
+    function startNextShift() {
+        if (!state.value || !isShiftFinished.value || !nextShift.value) {
+            return;
+        }
+
+        state.value = startShift(state.value, nextShift.value);
+        closeActivity();
+        persist();
+    }
+
     async function persist() {
         const snapshot = state.value;
+        const activities = shift.value?.activities ?? [];
 
         try {
             await playerStore.saveProgress(professionCode.value, {
                 level: snapshot.shift,
                 percent: getChapterPercent({
                     shiftNumber: snapshot.shift,
-                    completedCount: snapshot.completedActivities.length,
-                    activityCount: shift.value?.activities.length ?? 0,
+                    completedCount: activities.filter((activity) =>
+                        snapshot.completedActivities.includes(activity.code),
+                    ).length,
+                    activityCount: activities.length,
                     shiftCount: SHIFT_COUNT,
                 }),
                 state: snapshot,
@@ -166,9 +217,13 @@ export function useShift(professionCode) {
         activeActivity,
         activityStatuses,
         isShiftFinished,
+        nextShift,
+        morningEvents,
+        chapterEnding,
         getAnswers,
         openActivity,
         closeActivity,
         answerStep,
+        startNextShift,
     };
 }
