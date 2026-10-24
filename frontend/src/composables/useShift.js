@@ -101,6 +101,9 @@ export function useShift(professionCode) {
 
         return pickByConditions(chapterEndings[professionCode.value] ?? [], state.value);
     });
+    const hasProgress = computed(
+        () => (state.value?.shift ?? FIRST_SHIFT) > FIRST_SHIFT || Object.keys(state.value?.answers ?? {}).length > 0,
+    );
 
     watch([isRestored, professionCode], loadState, {immediate: true});
 
@@ -111,6 +114,11 @@ export function useShift(professionCode) {
 
         const saved = playerStore.getProgressState(professionCode.value);
         state.value = isShiftState(saved) ? normalizeShiftState(saved) : createShiftState(chapter.value);
+    }
+
+    function restart() {
+        closeActivity();
+        loadState();
     }
 
     /**
@@ -220,10 +228,12 @@ export function useShift(professionCode) {
         nextShift,
         morningEvents,
         chapterEnding,
+        hasProgress,
         getAnswers,
         openActivity,
         closeActivity,
         answerStep,
         startNextShift,
+        restart,
     };
 }

@@ -8,7 +8,19 @@ import {clearGuest, getGuest, saveGuestProgress, startGuest} from '@/core/helper
 /** @typedef {import('@/core/types/player').Progress} Progress */
 /** @typedef {import('@/core/types/player').Guest} Guest */
 /** @typedef {import('@/core/types/player').AuthResult} AuthResult */
-/** @typedef {{level: number, percent: number, state: Record<string, unknown>}} GameProgress */
+/** @typedef {{level: number, percent: number, state: Record<string, unknown> | null}} GameProgress */
+
+/** @type {Readonly<GameProgress>} */
+const EMPTY_PROGRESS = Object.freeze({level: 0, percent: 0, state: null});
+
+/**
+ * Сброшенный прогресс сервер хранит с новой revision, поэтому «не начата» — это нулевые уровень и процент.
+ * @param {{level: number, percent: number} | undefined} progress
+ * @returns {boolean}
+ */
+function isStarted(progress) {
+    return Boolean(progress && (progress.level > 0 || progress.percent > 0));
+}
 
 export const usePlayerStore = defineStore('player', () => {
     /** @type {import('vue').Ref<Player | null>} */
@@ -108,15 +120,9 @@ export const usePlayerStore = defineStore('player', () => {
      * @returns {{level: number, percent: number} | null}
      */
     function getProgressSummary(professionCode) {
-        if (isAccount.value) {
-            const progress = findAccountProgress(professionCode);
+        const progress = isAccount.value ? findAccountProgress(professionCode) : guest.value?.progress[professionCode];
 
-            return progress?.revision ? {level: progress.level, percent: progress.percent} : null;
-        }
-
-        const progress = guest.value?.progress[professionCode];
-
-        return progress ? {level: progress.level, percent: progress.percent} : null;
+        return isStarted(progress) ? {level: progress.level, percent: progress.percent} : null;
     }
 
     /**
@@ -150,6 +156,23 @@ export const usePlayerStore = defineStore('player', () => {
         saveQueue = save.catch(() => undefined);
 
         return save;
+    }
+
+    /**
+     * Начать профессию заново. Сброс важнее чужой вкладки: при конфликте повторяем с новой revision.
+     * @param {string} professionCode
+     * @returns {Promise<void>}
+     */
+    async function resetProgress(professionCode) {
+        try {
+            await saveProgress(professionCode, EMPTY_PROGRESS);
+        } catch (error) {
+            if (!playersApi.isApiError(error, ERROR_CODES.progressConflict)) {
+                throw error;
+            }
+
+            await saveProgress(professionCode, EMPTY_PROGRESS);
+        }
     }
 
     /**
@@ -219,5 +242,6 @@ export const usePlayerStore = defineStore('player', () => {
         getPercent,
         getProgressState,
         saveProgress,
+        resetProgress,
     };
 });

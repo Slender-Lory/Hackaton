@@ -1,6 +1,6 @@
 <script setup>
 import {computed} from 'vue';
-import {Layers, Play} from 'lucide-vue-next';
+import {Layers, Play, RotateCcw} from 'lucide-vue-next';
 import {COUNTER_LABELS} from '@/core/data/shifts';
 import {formatRubles} from '@/core/utils/format';
 
@@ -17,7 +17,7 @@ const props = defineProps({
     ending: {type: Object, default: null},
 });
 
-const emit = defineEmits(['next', 'leave']);
+const emit = defineEmits(['next', 'restart', 'leave']);
 
 const title = computed(() => props.ending?.title ?? props.shift.finale.title);
 const text = computed(() => props.ending?.text ?? props.shift.finale.text);
@@ -71,7 +71,17 @@ const results = computed(() => [
                 Начать смену {{ nextShift.number }}
             </UiButton>
             <UiButton
-                :theme="nextShift ? 'quiet' : 'action'"
+                v-else
+                @click="emit('restart')"
+            >
+                <RotateCcw
+                    :size="20"
+                    aria-hidden="true"
+                />
+                Пройти главу заново
+            </UiButton>
+            <UiButton
+                theme="quiet"
                 @click="emit('leave')"
             >
                 <Layers
