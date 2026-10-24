@@ -1,6 +1,7 @@
 <script setup>
 import {computed} from 'vue';
 import {Play} from 'lucide-vue-next';
+import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
 import {useToastStore} from '@/core/stores/toast';
@@ -94,6 +95,12 @@ function handleLocked(profession) {
                 {{ mainPercent === null ? 'Начать смену' : 'Продолжить смену' }}
             </UiButton>
             <p class="professions__note">Без регистрации, нужно только имя</p>
+            <RouterLink
+                class="professions__about"
+                :to="{name: ROUTE_NAMES.professionAbout, params: {profession: mainProfession.code}}"
+            >
+                Что это за профессия и как ей стать
+            </RouterLink>
         </div>
     </section>
 </template>
@@ -161,6 +168,16 @@ $mobile-card-half: 124px;
         align-items: center;
 
         @include column($indent-step * 3);
+    }
+
+    &__about {
+        color: $color-on-playmat;
+        font-weight: $font-weight-semibold;
+        text-underline-offset: 3px;
+
+        @include hover {
+            color: $color-action;
+        }
     }
 
     &__note {

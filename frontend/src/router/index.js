@@ -12,6 +12,11 @@ export const router = createRouter({
         {path: '/', redirect: {name: ROUTE_NAMES.professions}},
         {path: '/professions', name: ROUTE_NAMES.professions, component: ProfessionsPage},
         {
+            path: '/professions/:profession',
+            name: ROUTE_NAMES.professionAbout,
+            component: () => import('@/pages/ProfessionAboutPage.vue'),
+        },
+        {
             path: '/game/:profession/prologue',
             name: ROUTE_NAMES.prologue,
             component: () => import('@/pages/ProloguePage.vue'),

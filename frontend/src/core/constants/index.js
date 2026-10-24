@@ -1,5 +1,6 @@
 export const ROUTE_NAMES = Object.freeze({
     professions: 'professions',
+    professionAbout: 'profession-about',
     prologue: 'prologue',
     game: 'game',
     profile: 'profile',

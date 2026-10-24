@@ -1,6 +1,7 @@
 <script setup>
 import {computed} from 'vue';
 import {Check, Layers, Play, RotateCcw, Sprout} from 'lucide-vue-next';
+import {ROUTE_NAMES} from '@/core/constants';
 import {COUNTER_LABELS} from '@/core/data/shifts';
 import {formatRubles} from '@/core/utils/format';
 
@@ -105,6 +106,12 @@ const results = computed(() => [
                 быть готовым и не опускать руки. Ветеринар помогает тем, кто не может сказать, где болит, и часто
                 работает не ради денег, а потому что любит своё дело и не может пройти мимо.
             </p>
+            <RouterLink
+                class="shift-finale__about"
+                :to="{name: ROUTE_NAMES.professionAbout, params: {profession: 'vet'}}"
+            >
+                Как стать ветеринаром
+            </RouterLink>
         </section>
 
         <p
@@ -198,6 +205,17 @@ const results = computed(() => [
         border-top: 1px solid rgba($color-ink, 12%);
 
         @include padding('top', 3);
+    }
+
+    &__about {
+        align-self: flex-start;
+        color: $color-ink;
+        font-weight: $font-weight-semibold;
+        text-underline-offset: 3px;
+
+        @include hover {
+            color: $color-accent;
+        }
     }
 
     &__item-icon {
