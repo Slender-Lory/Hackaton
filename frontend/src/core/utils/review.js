@@ -95,7 +95,7 @@ export function getChapterReview(chapter, state) {
                     }
 
                     if (isMissed) {
-                        growth.push(`${step.title} — не всё важное проверено`);
+                        growth.push(`${step.title} — не всё нужное сделано`);
                     }
 
                     if (isExtra) {
