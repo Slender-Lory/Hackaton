@@ -108,7 +108,9 @@ Browser (Vue/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 ```
 
 - **Frontend** собирается Vite, отдаётся nginx'ом (SPA fallback → `index.html`, кэш ассетов).
-- **Прокси `/api`**: dev — Vite (`vite.config.ts`), prod — nginx (`infra/nginx/nginx.conf`); префикс `/api` снимается, backend получает запросы как `/health`, `/api/v1/...`.
+- **Прокси `/api`**: dev — Vite (`vite.config.ts`), prod — nginx (`infra/nginx/nginx.conf`); путь передаётся как есть:
+  браузер `/api/v1/players/login` → backend `/api/v1/players/login`. На фронте `api("/v1/players/login")`
+  с базой `VITE_API_URL=/api`. Health для фронта — `/api/health`, для healthcheck'ов compose — `/health`.
 - **Backend** — minimal API .NET 10: `/health` (liveness), `/ready` (readiness), `/api/v1/info`, Swagger в dev.
 - **CORS** — из `CORS_ORIGIN` (список через запятую), в docker — http://localhost:5173.
 - **БД** — PostgreSQL, инициализация SQL'ем из `infra/db/init/` при создании volume.
@@ -119,9 +121,13 @@ Browser (Vue/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 
 Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 
+Контракт для фронта со сценариями — [`docs/api.md`](docs/api.md); готовые TS-типы и функции
+(регистрация, вход, прогресс, гость в `localStorage`) — `frontend/src/shared/api/`.
+
 | Метод | Путь | Назначение | Ответ |
 |---|---|---|---|
 | GET | `/health` | liveness (healthcheck'и compose) | `{ status: "ok", service }` |
+| GET | `/api/health` | то же для фронта (через прокси `/api`) | `{ status: "ok", service }` |
 | GET | `/ready` | readiness: доступность БД; при `REQUIRE_DATABASE_URL=1` — ещё и наличие `DATABASE_URL` | `{ status: "ready" }` или 503 |
 | GET | `/api/v1/info` | имя, версия, окружение | `{ name, version, environment, date }` |
 | POST | `/api/v1/players/register` | регистрация `{ email, password, nickname, progress? }`; `progress` — прогресс гостя из `localStorage` | `{ player, token, expiresAt, importedProfessions, skippedProfessions }` |
