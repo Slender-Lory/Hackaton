@@ -13,6 +13,7 @@ import ProfessionCard from '@/components/Professions/ProfessionCard.vue';
 import ShiftActivity from '@/components/Shift/ShiftActivity.vue';
 import ShiftCounters from '@/components/Shift/ShiftCounters.vue';
 import ShiftFinale from '@/components/Shift/ShiftFinale.vue';
+import ShiftMorning from '@/components/Shift/ShiftMorning.vue';
 import ShiftPatientCard from '@/components/Shift/ShiftPatientCard.vue';
 
 const route = useRoute();
@@ -29,17 +30,20 @@ const {
     activeActivity,
     activityStatuses,
     isShiftFinished,
-    getAnswers,
+    nextShift,
+    morningEvents,
+    chapterEnding,
     openActivity,
     closeActivity,
     answerStep,
+    startNextShift,
 } = useShift(professionCode);
 
 const profession = computed(() => professions.find((item) => item.code === professionCode.value));
 
 watch([isRestored, state], leaveIfCannotPlay, {immediate: true});
 
-watch(activeActivity, () => window.scrollTo({top: 0}));
+watch([activeActivity, () => shift.value?.number], () => window.scrollTo({top: 0}));
 
 function leaveIfCannotPlay() {
     if (!isRestored.value) {
@@ -68,8 +72,7 @@ function leaveGame() {
             <ShiftActivity
                 :key="activeActivity.code"
                 :activity="activeActivity"
-                :answers="getAnswers(activeActivity.code)"
-                :revenue="counters.revenue"
+                :state="state"
                 @answer="answerStep"
                 @close="closeActivity"
             >
@@ -109,9 +112,16 @@ function leaveGame() {
                         v-if="isShiftFinished"
                         :shift="shift"
                         :counters="counters"
+                        :next-shift="nextShift"
+                        :ending="chapterEnding"
+                        @next="startNextShift"
                         @leave="leaveGame"
                     />
                     <template v-else>
+                        <ShiftMorning
+                            v-if="morningEvents.length"
+                            :events="morningEvents"
+                        />
                         <p class="game-page__note">Выбери, с чего начать: подсвеченные комнаты ждут тебя.</p>
                         <ClinicPlan
                             :shift="shift.number"

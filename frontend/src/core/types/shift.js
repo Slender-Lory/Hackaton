@@ -12,6 +12,15 @@
  */
 
 /**
+ * Условие по состоянию главы: счётчик в границах (включительно) или ответ, данный раньше.
+ * @typedef {object} Condition
+ * @property {keyof Counters} [counter]
+ * @property {number} [min]
+ * @property {number} [max]
+ * @property {{activity: string, step: string, is: string[]}} [answer] ответ на шаг — один из is
+ */
+
+/**
  * @typedef {'bone' | 'hand' | 'grab' | 'shield' | 'towel'} ActionIcon
  */
 
@@ -23,6 +32,8 @@
  * @property {ActionIcon} [icon] невербальное действие — иконка вместо реплики
  * @property {Effects} effects
  * @property {string} feedback
+ * @property {Condition[]} [requires] без них вариант закрыт
+ * @property {string} [lockedText] почему закрыт: показывается на варианте
  */
 
 /**
@@ -35,12 +46,24 @@
  */
 
 /**
+ * Вариант сцены: срабатывает первый, чьи условия выполнены. Последний вариант — без условий.
+ * @typedef {object} StoryVariant
+ * @property {string} id
+ * @property {Condition[]} [when]
+ * @property {string} title
+ * @property {string} text
+ * @property {Effects} [effects]
+ */
+
+/**
+ * Сцена. С variants текст и эффект зависят от того, как прошла глава; ответом сохраняется id варианта.
  * @typedef {object} StoryStep
  * @property {'story'} kind
  * @property {string} id
  * @property {string} title
  * @property {string} text
  * @property {Effects} [effects]
+ * @property {StoryVariant[]} [variants]
  */
 
 /**
@@ -91,12 +114,31 @@
  */
 
 /**
+ * Что случилось за ночь: применяется один раз в начале смены, если выполнены условия.
+ * @typedef {object} MorningEvent
+ * @property {string} id
+ * @property {Condition[]} [when]
+ * @property {string} text
+ * @property {Effects} [effects]
+ */
+
+/**
  * @typedef {object} Shift
  * @property {number} number
  * @property {string} title
  * @property {string} lead
+ * @property {MorningEvent[]} [morning]
  * @property {ShiftActivity[]} activities
  * @property {{title: string, text: string}} finale
+ */
+
+/**
+ * Финал главы: срабатывает первый, чьи условия выполнены. Последний — без условий.
+ * @typedef {object} ChapterEnding
+ * @property {string} id
+ * @property {Condition[]} [when]
+ * @property {string} title
+ * @property {string} text
  */
 
 /**
@@ -117,6 +159,7 @@
  * @property {Counters} counters
  * @property {string[]} completedActivities
  * @property {Record<string, ActivityAnswers>} answers
+ * @property {Record<string, string[]>} morning номер смены → id утренних событий, которые сработали
  */
 
 /**

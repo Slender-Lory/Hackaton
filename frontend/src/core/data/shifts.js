@@ -2,6 +2,7 @@ import {REPUTATION} from '@/core/data/reputation';
 
 /** @typedef {import('@/core/types/shift').Shift} Shift */
 /** @typedef {import('@/core/types/shift').Counters} Counters */
+/** @typedef {import('@/core/types/shift').ChapterEnding} ChapterEnding */
 
 /** @type {Readonly<Counters>} */
 export const START_COUNTERS = Object.freeze({revenue: 3000, reputation: 50, pigHealth: 60});
@@ -285,7 +286,393 @@ const VET_SHIFT_ONE = {
     ],
 };
 
+/** @type {Shift} */
+const VET_SHIFT_TWO = {
+    number: 2,
+    title: 'Развилка',
+    lead: 'Утром снова звонит Пётр Ильич: слёг соседний загон. Денег на всё не хватит, решай, куда их пустить.',
+    morning: [
+        {
+            id: 'disease-spreads',
+            text: 'За ночь ящур не отступил: у двух поросят новые язвы.',
+            effects: {pigHealth: -10},
+        },
+        {
+            id: 'no-quarantine',
+            when: [
+                {answer: {activity: 'farm-visit-1', step: 'treatment', is: ['antiseptic-only', 'cheap-antiseptic']}},
+            ],
+            text: 'Без карантина зараза перешла в соседний загон.',
+            effects: {pigHealth: -10},
+        },
+        {
+            id: 'word-of-mouth',
+            when: [{counter: 'reputation', min: 55}],
+            text: 'Алина рассказала о клинике подругам: с утра две новые записи.',
+            effects: {revenue: 1000},
+        },
+        {
+            id: 'empty-hall',
+            when: [{counter: 'reputation', max: 44}],
+            text: 'В приёмной пусто: о клинике пошли нехорошие разговоры.',
+        },
+    ],
+    finale: {
+        title: 'Вторая смена закончена',
+        text: 'Завтра последний выезд. Сколько поросят удастся спасти, решат деньги в кассе и доверие Петра Ильича.',
+    },
+    activities: [
+        {
+            code: 'farm-visit-2',
+            roomCode: 'garage',
+            title: 'Повторный выезд',
+            place: 'Свиноферма Петра Ильича',
+            patient: {name: 'Поросята', model: '/models/pig.glb', isSick: false},
+            steps: [
+                {
+                    kind: 'story',
+                    id: 'call',
+                    title: 'Звонок с фермы',
+                    text: '«Доктор, в соседнем загоне тоже слюна, а один поросёнок второй день не ест». Снова сорок минут по грунтовке.',
+                    effects: {revenue: -500},
+                },
+                {
+                    kind: 'choice',
+                    id: 'budget',
+                    title: 'Куда пустить деньги?',
+                    text: 'Препараты для фермы стоят дорого, а клинике тоже нужны расходники. На всё сразу не хватит.',
+                    hint: 'Ящур не ждёт: чем раньше обработка, тем меньше потерь.',
+                    options: [
+                        {
+                            id: 'farm-first',
+                            label: 'Купить всё для фермы сразу',
+                            effects: {revenue: -1500, pigHealth: 10},
+                            feedback:
+                                'Антисептики и дезсредства уже в машине. Касса похудела, зато ферме есть чем помочь.',
+                        },
+                        {
+                            id: 'cheap-drugs',
+                            label: 'Взять дешёвые аналоги',
+                            effects: {revenue: -600, pigHealth: 5},
+                            feedback: 'Аналоги слабее, но деньги остались. Лишь бы Пётр Ильич не заметил.',
+                        },
+                        {
+                            id: 'clinic-first',
+                            label: 'Сначала клиника, ферме что останется',
+                            effects: {pigHealth: -10},
+                            feedback: 'Касса цела, но поросята ещё полдня без обработки.',
+                        },
+                    ],
+                },
+                {
+                    kind: 'choice',
+                    id: 'source',
+                    title: 'Откуда зараза?',
+                    text: 'Пётр Ильич вспоминает: неделю назад купил шесть поросят на рынке, вчера приезжала машина с кормом, сосед заходил за инструментом.',
+                    hint: 'Ящур приходит с животными. Вспомни, когда всё началось.',
+                    options: [
+                        {
+                            id: 'market',
+                            label: 'Поросята с рынка',
+                            effects: {pigHealth: 5},
+                            feedback: 'Верно: первыми заболели новенькие. Теперь понятно, где начало цепочки.',
+                        },
+                        {
+                            id: 'feed',
+                            label: 'Машина с кормом',
+                            effects: {pigHealth: -5},
+                            feedback: 'Корм чистый, а настоящий источник так и остался без внимания.',
+                        },
+                        {
+                            id: 'neighbour',
+                            label: 'Сосед',
+                            effects: {pigHealth: -5},
+                            feedback: 'Сосед ни при чём. Пока ищешь не там, вирус делает своё дело.',
+                        },
+                    ],
+                },
+                {
+                    kind: 'choice',
+                    id: 'report',
+                    title: 'Кому сообщить?',
+                    text: 'О ящуре обязаны знать ветслужба и тот, кто продал поросят. Иначе заболеют другие фермы.',
+                    hint: 'Цепочку контактов нужно оборвать там, где она началась.',
+                    options: [
+                        {
+                            id: 'vet-service',
+                            label: 'Сообщить в ветслужбу и продавцу',
+                            effects: {pigHealth: 5},
+                            feedback:
+                                'Ветслужба закрыла торговлю на рынке до проверки. Пётр Ильич ворчит, но понимает.',
+                        },
+                        {
+                            id: 'farmer-only',
+                            label: 'Предупредить только Петра Ильича',
+                            effects: {pigHealth: -5},
+                            feedback: 'Продавец так и торгует больными поросятами. Цепочка не оборвана.',
+                        },
+                        {
+                            id: 'keep-quiet',
+                            label: 'Никому не говорить, чтобы не пугать',
+                            effects: {pigHealth: -10},
+                            feedback: 'Скрыть вспышку — худшее решение: через неделю заболеют соседние фермы.',
+                        },
+                    ],
+                },
+                {
+                    kind: 'checklist',
+                    id: 'disinfection',
+                    title: 'Обработка фермы',
+                    text: 'Что сделаешь на ферме сегодня? Расходники оплачивает клиника.',
+                    hint: 'Обработать нужно и животных, и место, где они живут.',
+                    payer: 'clinic',
+                    options: [
+                        {id: 'ulcers', label: 'Обработать язвы антисептиком', cost: 300, isNeeded: true},
+                        {id: 'pens', label: 'Продезинфицировать загоны', cost: 600, isNeeded: true},
+                        {id: 'mats', label: 'Положить дезковрики на входе', cost: 200, isNeeded: true},
+                        {id: 'vitamins', label: 'Витамины всему стаду', cost: 700, isNeeded: false},
+                        {id: 'immuno', label: 'Дорогой иммуностимулятор', cost: 1500, isNeeded: false},
+                    ],
+                    missedEffects: {pigHealth: -10},
+                    extraEffects: {},
+                    feedback: {
+                        exact: 'Язвы обработаны, загоны чистые, на входе дезковрики. Дальше зараза не пойдёт.',
+                        missed: 'Что-то упустил: вирус остался там, где его не обработали.',
+                        extra: 'Лишнее съело деньги, которые завтра пригодились бы ферме.',
+                    },
+                },
+                {
+                    kind: 'story',
+                    id: 'evening',
+                    title: 'Вечер на ферме',
+                    text: 'Пётр Ильич провожает до машины. Завтра контрольный выезд.',
+                    variants: [
+                        {
+                            id: 'holding',
+                            when: [{counter: 'pigHealth', min: 60}],
+                            title: 'Поросята держатся',
+                            text: 'К вечеру новых больных нет. Пётр Ильич впервые за три дня улыбается: «Завтра ждём на контроль».',
+                        },
+                        {
+                            id: 'on-edge',
+                            title: 'Ферма на грани',
+                            text: 'К вечеру слегли ещё трое. Пётр Ильич молчит. Завтра решится, скольких удастся спасти.',
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
+};
+
+/** @type {Shift} */
+const VET_SHIFT_THREE = {
+    number: 3,
+    title: 'Развязка',
+    lead: 'Последний выезд на ферму. Сегодня станет ясно, сколько поросят удастся спасти.',
+    morning: [
+        {
+            id: 'cheap-revealed',
+            when: [{answer: {activity: 'farm-visit-2', step: 'budget', is: ['cheap-drugs']}}],
+            text: 'Пётр Ильич нашёл чек на дешёвые аналоги и позвонил с упрёком.',
+            effects: {reputation: REPUTATION.cheapDrugsRevealed},
+        },
+        {
+            id: 'night-decline',
+            when: [{counter: 'pigHealth', max: 49}],
+            text: 'Ночью двум поросятам стало хуже.',
+            effects: {pigHealth: -5},
+        },
+        {
+            id: 'recovery',
+            when: [{counter: 'pigHealth', min: 70}],
+            text: 'Утром поросята сами подошли к кормушке.',
+            effects: {pigHealth: 5},
+        },
+        {
+            id: 'farmer-recommends',
+            when: [{counter: 'reputation', min: 60}],
+            text: 'Пётр Ильич рассказал о клинике соседу, и тот привёз на осмотр козу.',
+            effects: {revenue: 1000},
+        },
+    ],
+    finale: {
+        title: 'Глава закончена',
+        text: 'Три смены позади.',
+    },
+    activities: [
+        {
+            code: 'farm-visit-3',
+            roomCode: 'garage',
+            title: 'Контрольный выезд',
+            place: 'Свиноферма Петра Ильича',
+            patient: {name: 'Поросята', model: '/models/pig.glb', isSick: false},
+            steps: [
+                {
+                    kind: 'story',
+                    id: 'arrival',
+                    title: 'Снова на ферме',
+                    text: 'Третий раз по той же грунтовке.',
+                    variants: [
+                        {
+                            id: 'warm',
+                            when: [{counter: 'reputation', min: 50}],
+                            title: 'Пётр Ильич ждёт',
+                            text: 'Пётр Ильич встречает у ворот и сразу ведёт к загонам: «Делай, как скажешь».',
+                            effects: {revenue: -500},
+                        },
+                        {
+                            id: 'cold',
+                            title: 'Холодный приём',
+                            text: 'Пётр Ильич стоит у ворот с соседом и не торопится открывать: «Может, другого врача позвать?»',
+                            effects: {revenue: -500},
+                        },
+                    ],
+                },
+                {
+                    kind: 'checklist',
+                    id: 'control',
+                    title: 'Контроль',
+                    text: 'Что проверишь перед финальной обработкой? Платит клиника.',
+                    hint: 'Смотри, заживают ли язвы и нет ли новых больных.',
+                    payer: 'clinic',
+                    options: [
+                        {id: 'temperature', label: 'Измерить температуру всем', cost: 200, isNeeded: true},
+                        {id: 'ulcers', label: 'Осмотреть язвы', cost: 0, isNeeded: true},
+                        {id: 'new-cases', label: 'Проверить здоровых на новые язвы', cost: 0, isNeeded: true},
+                        {id: 'lab', label: 'Повторные пробы в лабораторию', cost: 1500, isNeeded: false},
+                        {id: 'xray', label: 'Рентген', cost: 900, isNeeded: false},
+                    ],
+                    missedEffects: {pigHealth: -10},
+                    extraEffects: {},
+                    feedback: {
+                        exact: 'Язвы подсыхают, новых больных двое. Теперь ясно, кого обрабатывать в первую очередь.',
+                        missed: 'Не всех осмотрел: пара больных поросят осталась без помощи.',
+                        extra: 'Ответ из лаборатории придёт через неделю, а деньги нужны сегодня.',
+                    },
+                },
+                {
+                    kind: 'choice',
+                    id: 'course',
+                    title: 'Финальная обработка',
+                    text: 'Последний шанс помочь поросятам. Чем больше вложишь, тем больше спасёшь.',
+                    hint: 'Полный курс сильнее всего, но только если на него хватает денег.',
+                    options: [
+                        {
+                            id: 'full',
+                            label: 'Полный курс: антисептики, витамины, дезинфекция',
+                            effects: {revenue: -2500, pigHealth: 20},
+                            feedback: 'Обработаны все, загоны снова чистые. Сделано всё, что можно.',
+                        },
+                        {
+                            id: 'basic',
+                            label: 'Только антисептики',
+                            effects: {revenue: -1000, pigHealth: 10},
+                            feedback: 'Язвы обработаны, но ослабленным поросятам может не хватить сил.',
+                        },
+                        {
+                            id: 'instructions',
+                            label: 'Оставить фермеру инструкции',
+                            effects: {pigHealth: -5},
+                            feedback: 'Пётр Ильич старается, но без препаратов язвы заживают медленно.',
+                        },
+                    ],
+                },
+                {
+                    kind: 'choice',
+                    id: 'quarantine',
+                    title: 'Карантин',
+                    text: 'Ещё две недели нельзя вывозить поросят и пускать чужих. Для Петра Ильича это убытки.',
+                    hint: 'Согласится ли фермер, зависит от того, доверяет ли он клинике.',
+                    options: [
+                        {
+                            id: 'persuade',
+                            label: 'Убедить продлить карантин',
+                            requires: [{counter: 'reputation', min: 50}],
+                            lockedText: 'Пётр Ильич не доверяет клинике',
+                            effects: {pigHealth: 10},
+                            feedback: 'Пётр Ильич кивает: «Тебе верю. Две недели — значит две недели».',
+                        },
+                        {
+                            id: 'threaten',
+                            label: 'Пригрозить штрафом ветслужбы',
+                            effects: {pigHealth: 5},
+                            feedback: 'Карантин продлён, но Пётр Ильич обиделся и разговаривает сквозь зубы.',
+                        },
+                        {
+                            id: 'skip',
+                            label: 'Не настаивать',
+                            effects: {pigHealth: -10},
+                            feedback: 'Через неделю Пётр Ильич повёз поросят на рынок, и часть стада заболела снова.',
+                        },
+                    ],
+                },
+                {
+                    kind: 'story',
+                    id: 'outcome',
+                    title: 'Итог',
+                    text: 'Пора подводить итоги.',
+                    variants: [
+                        {
+                            id: 'saved',
+                            when: [{counter: 'pigHealth', min: 70}],
+                            title: 'Ферма спасена',
+                            text: 'Язвы заживают, новых больных нет. Пётр Ильич жмёт руку и обещает рекомендовать клинику всем фермерам района.',
+                            effects: {reputation: REPUTATION.pigsSaved},
+                        },
+                        {
+                            id: 'partial',
+                            when: [{counter: 'pigHealth', min: 40}],
+                            title: 'Спасли не всех',
+                            text: 'Большинство поросят поправляется, но двоих спасти не удалось. Пётр Ильич благодарит, но смотрит в сторону.',
+                            effects: {reputation: REPUTATION.pigsLost},
+                        },
+                        {
+                            id: 'heavy-loss',
+                            title: 'Тяжёлые потери',
+                            text: 'Ящур забрал почти треть стада. Пётр Ильич говорит, что больше не обратится в клинику. Не всех удаётся спасти — это тоже часть профессии.',
+                            effects: {reputation: REPUTATION.pigsLost},
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
+};
+
 /** @type {Readonly<Record<string, readonly Shift[]>>} */
 export const shifts = Object.freeze({
-    vet: Object.freeze([VET_SHIFT_ONE]),
+    vet: Object.freeze([VET_SHIFT_ONE, VET_SHIFT_TWO, VET_SHIFT_THREE]),
+});
+
+/** @type {Readonly<Record<string, readonly ChapterEnding[]>>} */
+export const chapterEndings = Object.freeze({
+    vet: Object.freeze([
+        {
+            id: 'best-clinic',
+            when: [
+                {answer: {activity: 'farm-visit-3', step: 'outcome', is: ['saved']}},
+                {counter: 'reputation', min: 70},
+            ],
+            title: 'Лучшая клиника района',
+            text: 'Поросята спасены, а о клинике говорят и владельцы питомцев, и фермеры. Ты прошёл путь ветеринара от первого звонка до спасённого стада.',
+        },
+        {
+            id: 'farm-saved',
+            when: [{answer: {activity: 'farm-visit-3', step: 'outcome', is: ['saved']}}],
+            title: 'Ферма спасена',
+            text: 'Поросята здоровы, Пётр Ильич доволен. Репутацию клиники ещё есть куда растить, но главное сделано.',
+        },
+        {
+            id: 'hard-lesson',
+            when: [{counter: 'reputation', min: 50}],
+            title: 'Тяжёлый урок',
+            text: 'Часть поросят погибла, но владельцы питомцев по-прежнему доверяют клинике. Ты знаешь, где ошибся, и в следующий раз решишь иначе.',
+        },
+        {
+            id: 'cost-of-mistakes',
+            title: 'Цена ошибок',
+            text: 'Ферма понесла потери, а о клинике говорят без восторга. Ветеринар каждый день выбирает, кому помочь первым, и иногда эти выборы стоят дорого.',
+        },
+    ]),
 });
