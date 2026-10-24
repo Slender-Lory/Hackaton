@@ -1,0 +1,59 @@
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin column($gap: $indent-step * 3) {
+    display: flex;
+    flex-direction: column;
+    gap: $gap;
+}
+
+@mixin button-reset {
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+@mixin display($size: $font-size-xl) {
+    letter-spacing: -0.01em;
+    font-family: $font-display;
+    font-size: $size;
+    font-weight: $font-weight-regular;
+    line-height: 1.02;
+}
+
+@mixin chip($background: $color-card-text-box, $color: $color-ink) {
+    display: inline-flex;
+    align-items: center;
+    color: $color;
+    border-radius: $radius-chip;
+    background-color: $background;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    gap: $indent-step;
+
+    @include padding('y', 1);
+    @include padding('x', 3);
+}
+
+@mixin card-face {
+    border: 6px solid $color-accent;
+    border-radius: $radius-card;
+    background-color: $color-card-face;
+    box-shadow: $shadow-card;
+}
+
+@mixin card-back {
+    border: 6px solid $color-white;
+    border-radius: $radius-card;
+    background-color: $color-card-back;
+    background-image:
+        radial-gradient(circle at 50% 50%, $color-card-back-pattern 0 2px, transparent 3px),
+        repeating-linear-gradient(45deg, rgba($color-white, 7%) 0 10px, transparent 10px 20px);
+    background-size:
+        18px 18px,
+        auto;
+    box-shadow: $shadow-card;
+}

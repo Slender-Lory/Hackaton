@@ -1,0 +1,22 @@
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes card-deal {
+    from {
+        transform: translateY(40px) rotate(var(--deal-from, -10deg)) scale(0.92);
+        opacity: 0;
+    }
+}
+
+@keyframes card-hop {
+    30% {
+        transform: translateY(-18px) rotate(-3deg);
+    }
+
+    60% {
+        transform: translateY(0) rotate(2deg);
+    }
+}

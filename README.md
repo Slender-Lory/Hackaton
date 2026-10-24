@@ -108,8 +108,8 @@ Browser (Vue/Vite) → nginx (5173) → .NET API (8080) → PostgreSQL (5432)
 ```
 
 - **Frontend** собирается Vite, отдаётся nginx'ом (SPA fallback → `index.html`, кэш ассетов).
-- **Прокси `/api`**: dev — Vite (`vite.config.ts`), prod — nginx (`infra/nginx/nginx.conf`); путь передаётся как есть:
-  браузер `/api/v1/players/login` → backend `/api/v1/players/login`. На фронте `api("/v1/players/login")`
+- **Прокси `/api`**: dev — Vite (`vite.config.js`), prod — nginx (`infra/nginx/nginx.conf`); путь передаётся как есть:
+  браузер `/api/v1/players/login` → backend `/api/v1/players/login`. На фронте `http.post("/v1/players/login")`
   с базой `VITE_API_URL=/api`. Health для фронта — `/api/health`, для healthcheck'ов compose — `/health`.
 - **Backend** — minimal API .NET 10: `/health` (liveness), `/ready` (readiness), `/api/v1/info`, Swagger в dev.
 - **CORS** — из `CORS_ORIGIN` (список через запятую), в docker — http://localhost:5173.
@@ -152,7 +152,7 @@ Backend (minimal API .NET 10). В dev Swagger UI: http://localhost:8080/swagger
 - Ответы контроллеров — `{ result, error }`. Ошибка: `error: { code, message }`, где `code` — 8-значный код из
   `AppErrorCodes` (первые 2 цифры — группа), `message` — текст для игрока; HTTP-статус соответствует коду
   (400 форма, 401 нет входа / неверная почта или пароль, 403 неверный пароль при удалении аккаунта,
-  409 почта занята / конфликт прогресса, 429 слишком много попыток). На фронте это `ApiError` (`client.ts`).
+  409 почта занята / конфликт прогресса, 429 слишком много попыток). На фронте это `ApiError` (`core/api/client.js`).
 - CORS: заголовок задаётся переменной `CORS_ORIGIN` (несколько источников через запятую).
 
 ### Игроки и прогресс
@@ -226,7 +226,7 @@ OUT=../projects ./scaffold.sh --name myapp       # сгенерировать в
 
 ```
 ├── backend/            # .NET: Api (webapi) + опционально Application/Domain/Infrastructure/Contracts/tests
-├── frontend/           # Vue 3 + TypeScript + Vite 5 (ESLint, Vitest)
+├── frontend/           # Vue 3 + JavaScript + Vite 5 (ESLint, Vitest)
 ├── infra/
 │   ├── db/init/        # SQL, выполняется при первом старте БД
 │   ├── docker/         # Dockerfile backend/frontend
