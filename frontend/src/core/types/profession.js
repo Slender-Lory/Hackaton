@@ -25,4 +25,12 @@
  * @property {boolean} isAvailable false — карта лежит рубашкой вверх
  */
 
+/**
+ * Страница о профессии: что делает, зачем, как стать.
+ * @typedef {object} ProfessionInfo
+ * @property {string} title
+ * @property {string} lead
+ * @property {{id: string, title: string, items: string[]}[]} sections
+ */
+
 export {};
