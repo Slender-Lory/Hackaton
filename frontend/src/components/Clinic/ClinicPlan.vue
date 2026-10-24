@@ -1,44 +1,80 @@
 <script setup>
-import {Lock} from 'lucide-vue-next';
+import {computed} from 'vue';
+import {Check, Lock, PawPrint} from 'lucide-vue-next';
 import {clinicRooms} from '@/core/data/clinic';
 import {useToastStore} from '@/core/stores/toast';
 
+/** @typedef {import('@/core/types/clinic').ClinicRoom} ClinicRoom */
+/** @typedef {import('@/core/types/shift').ShiftActivity} ShiftActivity */
+
 const props = defineProps({
     shift: {type: Number, default: 1},
+    /** @type {import('vue').PropType<ShiftActivity[]>} */
+    activities: {type: Array, default: () => []},
+    /** @type {import('vue').PropType<Record<string, 'new' | 'started' | 'done'>>} */
+    statuses: {type: Object, default: () => ({})},
 });
+
+const emit = defineEmits(['open']);
 
 const toastStore = useToastStore();
 
-/** @param {import('@/core/types/clinic').ClinicRoom} room */
-function isRoomOpen(room) {
-    return room.unlockShift <= props.shift;
-}
+const rooms = computed(() =>
+    clinicRooms.map((room) => {
+        const activity = props.activities.find((item) => item.roomCode === room.code) ?? null;
 
-/** @param {import('@/core/types/clinic').ClinicRoom} room */
+        return {
+            ...room,
+            activity,
+            isOpen: room.unlockShift <= props.shift,
+            status: activity ? (props.statuses[activity.code] ?? 'new') : null,
+        };
+    }),
+);
+
+/** @param {(typeof rooms.value)[number]} room */
 function handleRoomClick(room) {
-    if (isRoomOpen(room)) {
-        toastStore.show(`${room.title}: сюда придёт первый пациент`);
+    if (!room.isOpen) {
+        toastStore.show(`${room.title} откроется на смене ${room.unlockShift}`);
 
         return;
     }
 
-    toastStore.show(`${room.title} откроется на смене ${room.unlockShift}`);
+    if (!room.activity) {
+        toastStore.show(`${room.title}: сегодня здесь никого`);
+
+        return;
+    }
+
+    if (room.status === 'done') {
+        toastStore.show(`${room.title}: на сегодня всё сделано`);
+
+        return;
+    }
+
+    emit('open', room.activity.code);
 }
 </script>
 
 <template>
     <div class="clinic-plan">
         <button
-            v-for="room in clinicRooms"
+            v-for="room in rooms"
             :key="room.code"
             type="button"
-            :class="['clinic-plan__room', {'clinic-plan__room--locked': !isRoomOpen(room)}]"
-            :style="{gridArea: room.area}"
+            :class="[
+                'clinic-plan__room',
+                {
+                    'clinic-plan__room--locked': !room.isOpen,
+                    'clinic-plan__room--waiting': room.status === 'new' || room.status === 'started',
+                },
+            ]"
+            :style="{'--area': room.area}"
             @click="handleRoomClick(room)"
         >
             <span class="clinic-plan__room-title">{{ room.title }}</span>
             <span
-                v-if="!isRoomOpen(room)"
+                v-if="!room.isOpen"
                 class="clinic-plan__room-lock"
             >
                 <Lock
@@ -48,10 +84,36 @@ function handleRoomClick(room) {
                 Смена {{ room.unlockShift }}
             </span>
             <span
+                v-else-if="room.status === 'done'"
+                class="clinic-plan__room-status"
+            >
+                <Check
+                    :size="14"
+                    aria-hidden="true"
+                />
+                Готово
+            </span>
+            <span
+                v-else-if="room.status === 'started'"
+                class="clinic-plan__room-call"
+            >
+                Продолжить
+            </span>
+            <span
+                v-else-if="room.activity"
+                class="clinic-plan__room-call"
+            >
+                <PawPrint
+                    :size="14"
+                    aria-hidden="true"
+                />
+                {{ room.activity.patient.name }}
+            </span>
+            <span
                 v-else
                 class="clinic-plan__room-status"
             >
-                Открыто
+                Свободно
             </span>
         </button>
     </div>
@@ -62,7 +124,7 @@ function handleRoomClick(room) {
     display: grid;
     border: 2px dashed $color-playmat-line;
     border-radius: $radius-card + 6px;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     grid-template-rows: repeat(4, minmax(76px, auto));
     gap: $indent-step * 3;
 
@@ -74,6 +136,7 @@ function handleRoomClick(room) {
         align-items: flex-start;
         flex-direction: column;
         justify-content: space-between;
+        min-width: 0;
         transition: transform $duration $ease-out;
         text-align: left;
         color: $color-ink;
@@ -82,12 +145,20 @@ function handleRoomClick(room) {
         background-color: $color-card-face;
         box-shadow: $shadow-button;
         gap: $indent-step * 2;
+        grid-area: var(--area);
 
         @include padding('y', 3);
         @include padding('x', 3);
 
         @include hover {
             transform: translateY(-4px);
+        }
+
+        &--waiting {
+            border-color: $color-action;
+            box-shadow:
+                0 0 0 4px rgba($color-action, 35%),
+                $shadow-button;
         }
 
         &--locked {
@@ -103,10 +174,15 @@ function handleRoomClick(room) {
     &__room-title {
         font-weight: $font-weight-bold;
         line-height: 1.2;
+        overflow-wrap: anywhere;
     }
 
     &__room-status {
         @include chip(rgba($color-profession-vet, 18%));
+    }
+
+    &__room-call {
+        @include chip($color-action);
     }
 
     &__room-lock {
@@ -114,11 +190,20 @@ function handleRoomClick(room) {
     }
 
     @include mobile {
-        grid-template-rows: repeat(4, minmax(92px, auto));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: none;
+        grid-auto-rows: minmax(92px, auto);
         gap: $indent-step * 2;
 
+        @include padding('y', 2);
+        @include padding('x', 2);
+
+        &__room {
+            grid-area: auto;
+        }
+
         &__room-title {
-            font-size: $font-size-xs;
+            font-size: $font-size-sm;
         }
     }
 }

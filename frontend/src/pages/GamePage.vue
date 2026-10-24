@@ -1,53 +1,135 @@
 <script setup>
-import {computed} from 'vue';
-import {useRoute} from 'vue-router';
+import {storeToRefs} from 'pinia';
+import {computed, watch} from 'vue';
+import {useRoute, useRouter} from 'vue-router';
 import {ArrowLeft} from 'lucide-vue-next';
 import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
+import {useShift} from '@/composables/useShift';
 
 import ClinicPlan from '@/components/Clinic/ClinicPlan.vue';
 import ProfessionCard from '@/components/Professions/ProfessionCard.vue';
+import ShiftActivity from '@/components/Shift/ShiftActivity.vue';
+import ShiftCounters from '@/components/Shift/ShiftCounters.vue';
+import ShiftFinale from '@/components/Shift/ShiftFinale.vue';
+import ShiftPatientCard from '@/components/Shift/ShiftPatientCard.vue';
 
 const route = useRoute();
+const router = useRouter();
 const playerStore = usePlayerStore();
+const {isRestored, isSignedIn} = storeToRefs(playerStore);
 
-const profession = computed(() => professions.find((item) => item.code === route.params.profession));
+const professionCode = computed(() => String(route.params.profession));
+
+const {
+    state,
+    shift,
+    counters,
+    activeActivity,
+    activityStatuses,
+    isShiftFinished,
+    getAnswers,
+    openActivity,
+    closeActivity,
+    answerStep,
+} = useShift(professionCode);
+
+const profession = computed(() => professions.find((item) => item.code === professionCode.value));
+
+watch([isRestored, state], leaveIfCannotPlay, {immediate: true});
+
+watch(activeActivity, () => window.scrollTo({top: 0}));
+
+function leaveIfCannotPlay() {
+    if (!isRestored.value) {
+        return;
+    }
+
+    if (!isSignedIn.value || !profession.value || (state.value && !shift.value)) {
+        leaveGame();
+    }
+}
+
+function leaveGame() {
+    router.replace({name: ROUTE_NAMES.professions});
+}
 </script>
 
 <template>
-    <div class="game-page">
-        <RouterLink
-            class="game-page__back"
-            :to="{name: ROUTE_NAMES.professions}"
+    <div
+        v-if="shift"
+        class="game-page"
+    >
+        <div
+            v-if="activeActivity"
+            class="game-page__table"
         >
-            <ArrowLeft
-                :size="18"
-                aria-hidden="true"
-            />
-            К колоде
-        </RouterLink>
-
-        <div class="game-page__table">
-            <div class="game-page__main">
-                <div class="game-page__intro">
-                    <h1 class="game-page__title">Смена 1. Первый вызов</h1>
-                    <p class="game-page__lead">
-                        6:40, звонит Пётр Ильич: поросята не встают, у троих слюна. До фермы сорок минут, а в приёмной
-                        уже ждёт Барон.
-                    </p>
-                </div>
-                <ClinicPlan :shift="1" />
-                <p class="game-page__note">Смена в разработке: здесь появятся приём, триаж и выезд на ферму.</p>
-            </div>
-            <ProfessionCard
-                v-if="profession"
+            <ShiftActivity
+                :key="activeActivity.code"
+                :activity="activeActivity"
+                :answers="getAnswers(activeActivity.code)"
+                :revenue="counters.revenue"
+                @answer="answerStep"
+                @close="closeActivity"
+            >
+                <template #counters>
+                    <ShiftCounters :counters="counters" />
+                </template>
+            </ShiftActivity>
+            <ShiftPatientCard
                 class="game-page__card"
-                :profession="profession"
-                :percent="playerStore.getPercent(profession.code)"
-                is-patient-sick
+                :activity="activeActivity"
             />
         </div>
+
+        <template v-else>
+            <RouterLink
+                class="game-page__back"
+                :to="{name: ROUTE_NAMES.professions}"
+            >
+                <ArrowLeft
+                    :size="18"
+                    aria-hidden="true"
+                />
+                К колоде
+            </RouterLink>
+
+            <div class="game-page__table">
+                <div class="game-page__main">
+                    <div class="game-page__intro">
+                        <h1 class="game-page__title">Смена {{ shift.number }}. {{ shift.title }}</h1>
+                        <p class="game-page__lead">{{ shift.lead }}</p>
+                    </div>
+                    <ShiftCounters
+                        v-if="!isShiftFinished"
+                        :counters="counters"
+                    />
+                    <ShiftFinale
+                        v-if="isShiftFinished"
+                        :shift="shift"
+                        :counters="counters"
+                        @leave="leaveGame"
+                    />
+                    <template v-else>
+                        <p class="game-page__note">Выбери, с чего начать: подсвеченные комнаты ждут тебя.</p>
+                        <ClinicPlan
+                            :shift="shift.number"
+                            :activities="shift.activities"
+                            :statuses="activityStatuses"
+                            @open="openActivity"
+                        />
+                    </template>
+                </div>
+                <ProfessionCard
+                    v-if="profession"
+                    class="game-page__card"
+                    :profession="profession"
+                    :percent="playerStore.getPercent(profession.code)"
+                    is-patient-sick
+                />
+            </div>
+        </template>
     </div>
 </template>
 
@@ -74,7 +156,7 @@ $card-width: 320px;
     &__main {
         min-width: 0;
 
-        @include column($indent-step * 10);
+        @include column($indent-step * 8);
     }
 
     &__intro {
@@ -115,6 +197,7 @@ $card-width: 320px;
 
         @include tablet {
             position: static;
+            width: 100%;
             max-width: $card-width;
             justify-self: center;
             rotate: 0deg;
@@ -122,6 +205,7 @@ $card-width: 320px;
     }
 
     &__note {
+        margin-bottom: -$indent-step * 4;
         color: $color-on-playmat-soft;
         font-size: $font-size-sm;
     }

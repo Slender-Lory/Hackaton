@@ -1,6 +1,7 @@
 import {createPinia, setActivePinia} from 'pinia';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as playersApi from '@/core/api/players';
+import {ERROR_CODES} from '@/core/constants';
 import {getGuest} from '@/core/helpers/guestStorage';
 import {usePlayerStore} from './player';
 
@@ -13,6 +14,9 @@ vi.mock('@/core/api/players', () => ({
     getProfile: vi.fn(),
     logout: vi.fn(),
     deleteAccount: vi.fn(),
+    saveProgress: vi.fn(),
+    getProgress: vi.fn(),
+    isApiError: (error, code) => error?.code === code,
 }));
 
 const ACCOUNT = {id: '1', nickname: 'Аня', email: 'anya@example.com', createdAt: ''};
@@ -90,5 +94,40 @@ describe('usePlayerStore', () => {
 
         expect(store.getPercent('vet')).toBe(35);
         expect(store.getPercent('agro')).toBeNull();
+    });
+
+    it('гость сохраняет прогресс игры в браузер', async () => {
+        const store = usePlayerStore();
+        store.startAsGuest('Аня');
+
+        await store.saveProgress('vet', {level: 1, percent: 17, state: {version: 1}});
+
+        expect(store.getProgressState('vet')).toEqual({version: 1});
+        expect(getGuest().progress.vet.percent).toBe(17);
+        expect(playersApi.saveProgress).not.toHaveBeenCalled();
+    });
+
+    it('аккаунт сохраняет прогресс с последней revision', async () => {
+        playersApi.restoreSession.mockResolvedValue(PROFILE);
+        playersApi.saveProgress.mockResolvedValue({professionCode: 'vet', level: 2, percent: 40, revision: 4});
+        const store = usePlayerStore();
+        await store.restore();
+
+        await store.saveProgress('vet', {level: 2, percent: 40, state: {}});
+
+        expect(playersApi.saveProgress).toHaveBeenCalledWith('vet', expect.objectContaining({expectedRevision: 3}));
+        expect(store.getPercent('vet')).toBe(40);
+    });
+
+    it('при конфликте перечитывает прогресс с сервера', async () => {
+        playersApi.restoreSession.mockResolvedValue(PROFILE);
+        playersApi.saveProgress.mockRejectedValue({code: ERROR_CODES.progressConflict});
+        playersApi.getProgress.mockResolvedValue({professionCode: 'vet', level: 2, percent: 50, revision: 5});
+        const store = usePlayerStore();
+        await store.restore();
+
+        await expect(store.saveProgress('vet', {level: 2, percent: 40, state: {}})).rejects.toBeDefined();
+
+        expect(store.getPercent('vet')).toBe(50);
     });
 });

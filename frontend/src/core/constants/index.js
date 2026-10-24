@@ -9,6 +9,9 @@ export const NICKNAME_MIN_LENGTH = 2;
 export const NICKNAME_MAX_LENGTH = 24;
 export const PASSWORD_MIN_LENGTH = 8;
 
+export const SHIFT_COUNT = 3;
+export const STORY_ANSWER = 'read';
+
 export const DIFFICULTIES = Object.freeze({
     easy: 'Easy',
     normal: 'Normal',
