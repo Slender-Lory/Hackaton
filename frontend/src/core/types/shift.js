@@ -195,6 +195,7 @@
  * Дело смены: приём, выезд. Привязано к комнате на плане клиники.
  * @typedef {object} ShiftActivity
  * @property {string} code
+ * @property {'triage'} [kind] очередь из трёх пациентов: своя сцена вместо шагов, состояние — в answers[code].triage
  * @property {string} roomCode
  * @property {string} title
  * @property {string} place

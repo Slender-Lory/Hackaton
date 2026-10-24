@@ -206,6 +206,42 @@ export function useShift(professionCode) {
         persist();
     }
 
+    /**
+     * Черновик триажа сохраняется сразу: таймер идёт и после перезагрузки.
+     * @param {import('@/core/types/triage').TriageState} triageState
+     */
+    function saveTriage(triageState) {
+        const activity = activeActivity.value;
+
+        if (!state.value || !activity || completedActivities.value.includes(activity.code)) {
+            return;
+        }
+
+        state.value = {...state.value, answers: {...state.value.answers, [activity.code]: {triage: triageState}}};
+        persist();
+    }
+
+    /**
+     * Итог триажа: эффекты, финальное состояние и завершение дела — одним сохранением и один раз.
+     * @param {import('@/core/types/triage').TriageResult} result
+     * @param {import('@/core/types/triage').TriageState} triageState
+     */
+    function resolveTriage(result, triageState) {
+        const activity = activeActivity.value;
+
+        if (!state.value || !activity || completedActivities.value.includes(activity.code)) {
+            return;
+        }
+
+        state.value = {
+            ...state.value,
+            counters: applyEffects(state.value.counters, result.effects),
+            answers: {...state.value.answers, [activity.code]: {triage: triageState}},
+            completedActivities: [...state.value.completedActivities, activity.code],
+        };
+        persist();
+    }
+
     function startNextShift() {
         if (!state.value || !isShiftFinished.value || !nextShift.value) {
             return;
@@ -269,6 +305,8 @@ export function useShift(professionCode) {
         openActivity,
         closeActivity,
         answerStep,
+        saveTriage,
+        resolveTriage,
         startNextShift,
         chooseDifficulty,
         restart,

@@ -51,7 +51,7 @@ function pick(role, patientId) {
     >
         <header class="triage__header">
             <div>
-                <p class="triage__eyebrow">Смена 2 / Приёмная</p>
+                <p class="triage__eyebrow">Приёмная</p>
                 <h1
                     id="triage-title"
                     class="triage__title"

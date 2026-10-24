@@ -19,6 +19,7 @@ import ShiftDifficulty from '@/components/Shift/ShiftDifficulty.vue';
 import ShiftFinale from '@/components/Shift/ShiftFinale.vue';
 import ShiftMorning from '@/components/Shift/ShiftMorning.vue';
 import ShiftPatientCard from '@/components/Shift/ShiftPatientCard.vue';
+import TriageActivity from '@/components/Triage/TriageActivity.vue';
 
 const PLAN_NOTE = 'Выбери, с чего начать: подсвеченные комнаты ждут тебя.';
 
@@ -47,7 +48,10 @@ const {
     activeChart,
     openActivity,
     closeActivity,
+    getAnswers,
     answerStep,
+    saveTriage,
+    resolveTriage,
     startNextShift,
     chooseDifficulty,
     restart,
@@ -95,7 +99,18 @@ function handleReset() {
             v-if="activeActivity"
             class="game-page__table"
         >
+            <TriageActivity
+                v-if="activeActivity.kind === 'triage'"
+                :key="activeActivity.code"
+                :state="getAnswers(activeActivity.code).triage ?? null"
+                :scenario-id="`vet-shift-${shift.number}-${activeActivity.code}`"
+                :counters="counters"
+                @update:state="saveTriage"
+                @resolve="resolveTriage"
+                @continue="closeActivity"
+            />
             <ShiftActivity
+                v-else
                 :key="activeActivity.code"
                 :activity="activeActivity"
                 :state="state"
@@ -108,6 +123,7 @@ function handleReset() {
                 </template>
             </ShiftActivity>
             <ShiftPatientCard
+                v-if="activeActivity.kind !== 'triage'"
                 class="game-page__card"
                 :activity="activeActivity"
                 @passport="isPassportOpen = true"

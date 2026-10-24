@@ -88,7 +88,7 @@ export function resolveTriage(state) {
         ...(!parrotSaved ? [{code: 'triageLoss', label: 'Потеря пациента в триаже'}] : []),
         {
             code: correctPriority ? 'triageRightOrder' : 'triageWrongOrder',
-            label: correctPriority ? 'Верный приоритет' : 'Неверный приоритет',
+            label: correctPriority ? 'Срочные приняты первыми' : 'Срочные пациенты ждали',
         },
         ...(!catTreated ? [{code: 'ownerRefusedToWait', label: 'Владелица ушла'}] : []),
     ].map((event) => ({...event, value: REPUTATION[event.code]}));
@@ -98,7 +98,7 @@ export function resolveTriage(state) {
         outcomeId,
         ...TRIAGE_OUTCOMES[outcomeId],
         effects: {
-            revenue: (catTreated ? 1400 : 0) - (parrotSaved ? 600 : 200) - (strayHelped ? 400 : 0),
+            revenue: (catTreated ? 4500 : 0) - (parrotSaved ? 3000 : 1000) - (strayHelped ? 2500 : 0),
             reputation: reputationEvents.reduce((total, event) => total + event.value, 0),
         },
         patientOutcomes: {
