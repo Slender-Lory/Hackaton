@@ -4,6 +4,7 @@ import {Bone, Grab, Hand, Shield, Shirt} from 'lucide-vue-next';
 import {getUnaffordableOptionIds} from '@/core/utils/shift';
 import {formatRubles} from '@/core/utils/format';
 
+const SHORT_OF_MONEY = 'Не хватает денег';
 const ACTION_ICONS = Object.freeze({bone: Bone, hand: Hand, grab: Grab, shield: Shield, towel: Shirt});
 
 const props = defineProps({
@@ -11,6 +12,8 @@ const props = defineProps({
     step: {type: Object, required: true},
     answer: {type: String, default: null},
     revenue: {type: Number, required: true},
+    /** @type {import('vue').PropType<Record<string, string>>} */
+    lockedOptions: {type: Object, default: () => ({})},
 });
 
 const emit = defineEmits(['answer']);
@@ -19,13 +22,19 @@ const isAnswered = computed(() => props.answer !== null);
 const isNonVerbal = computed(() => props.step.options.every((option) => option.icon));
 const unaffordableIds = computed(() => getUnaffordableOptionIds(props.step.options, props.revenue));
 const options = computed(() =>
-    props.step.options.map((option) => ({
-        ...option,
-        iconComponent: ACTION_ICONS[option.icon],
-        cost: Math.max(0, -(option.effects.revenue ?? 0)),
-        isChosen: option.id === props.answer,
-        isUnaffordable: unaffordableIds.value.includes(option.id),
-    })),
+    props.step.options.map((option) => {
+        const lockedText =
+            props.lockedOptions[option.id] ?? (unaffordableIds.value.includes(option.id) ? SHORT_OF_MONEY : '');
+
+        return {
+            ...option,
+            iconComponent: ACTION_ICONS[option.icon],
+            cost: Math.max(0, -(option.effects.revenue ?? 0)),
+            isChosen: option.id === props.answer,
+            lockedText,
+            isLocked: Boolean(lockedText),
+        };
+    }),
 );
 
 /** @param {string} optionId */
@@ -45,10 +54,10 @@ function handlePick(optionId) {
                 {
                     'shift-choice__option--chosen': option.isChosen,
                     'shift-choice__option--faded': isAnswered && !option.isChosen,
-                    'shift-choice__option--locked': !isAnswered && option.isUnaffordable,
+                    'shift-choice__option--locked': !isAnswered && option.isLocked,
                 },
             ]"
-            :disabled="isAnswered || option.isUnaffordable"
+            :disabled="isAnswered || option.isLocked"
             :aria-pressed="option.isChosen"
             @click="handlePick(option.id)"
         >
@@ -61,10 +70,10 @@ function handlePick(optionId) {
             />
             <span class="shift-choice__label">{{ option.label }}</span>
             <span
-                v-if="option.isUnaffordable"
+                v-if="!isAnswered && option.isLocked"
                 class="shift-choice__cost shift-choice__cost--short"
             >
-                Не хватает денег
+                {{ option.lockedText }}
             </span>
             <span
                 v-else-if="option.cost"

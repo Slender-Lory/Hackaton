@@ -1,23 +1,31 @@
 <script setup>
 import {storeToRefs} from 'pinia';
-import {computed, watch} from 'vue';
+import {computed, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
-import {ArrowLeft} from 'lucide-vue-next';
+import {ArrowLeft, RotateCcw} from 'lucide-vue-next';
 import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
+import {useToastStore} from '@/core/stores/toast';
 import {useShift} from '@/composables/useShift';
 
 import ClinicPlan from '@/components/Clinic/ClinicPlan.vue';
+import PatientPassport from '@/components/Patients/PatientPassport.vue';
 import ProfessionCard from '@/components/Professions/ProfessionCard.vue';
+import ResetProgressForm from '@/components/Forms/ResetProgressForm.vue';
 import ShiftActivity from '@/components/Shift/ShiftActivity.vue';
 import ShiftCounters from '@/components/Shift/ShiftCounters.vue';
+import ShiftDifficulty from '@/components/Shift/ShiftDifficulty.vue';
 import ShiftFinale from '@/components/Shift/ShiftFinale.vue';
+import ShiftMorning from '@/components/Shift/ShiftMorning.vue';
 import ShiftPatientCard from '@/components/Shift/ShiftPatientCard.vue';
+
+const PLAN_NOTE = 'Выбери, с чего начать: подсвеченные комнаты ждут тебя.';
 
 const route = useRoute();
 const router = useRouter();
 const playerStore = usePlayerStore();
+const toastStore = useToastStore();
 const {isRestored, isSignedIn} = storeToRefs(playerStore);
 
 const professionCode = computed(() => String(route.params.profession));
@@ -29,17 +37,33 @@ const {
     activeActivity,
     activityStatuses,
     isShiftFinished,
-    getAnswers,
+    nextShift,
+    morningEvents,
+    chapterEnding,
+    hasProgress,
+    needsDifficulty,
+    shiftHint,
+    openRoomCodes,
+    activeChart,
     openActivity,
     closeActivity,
     answerStep,
+    startNextShift,
+    chooseDifficulty,
+    restart,
 } = useShift(professionCode);
+
+const isResetFormOpen = ref(false);
+const isPassportOpen = ref(false);
 
 const profession = computed(() => professions.find((item) => item.code === professionCode.value));
 
 watch([isRestored, state], leaveIfCannotPlay, {immediate: true});
 
-watch(activeActivity, () => window.scrollTo({top: 0}));
+watch([activeActivity, () => shift.value?.number], () => {
+    isPassportOpen.value = false;
+    window.scrollTo({top: 0});
+});
 
 function leaveIfCannotPlay() {
     if (!isRestored.value) {
@@ -53,6 +77,12 @@ function leaveIfCannotPlay() {
 
 function leaveGame() {
     router.replace({name: ROUTE_NAMES.professions});
+}
+
+function handleReset() {
+    isResetFormOpen.value = false;
+    restart();
+    toastStore.show('Прогресс сброшен: глава начинается с первой смены');
 }
 </script>
 
@@ -68,10 +98,10 @@ function leaveGame() {
             <ShiftActivity
                 :key="activeActivity.code"
                 :activity="activeActivity"
-                :answers="getAnswers(activeActivity.code)"
-                :revenue="counters.revenue"
+                :state="state"
                 @answer="answerStep"
                 @close="closeActivity"
+                @passport="isPassportOpen = true"
             >
                 <template #counters>
                     <ShiftCounters :counters="counters" />
@@ -80,20 +110,35 @@ function leaveGame() {
             <ShiftPatientCard
                 class="game-page__card"
                 :activity="activeActivity"
+                @passport="isPassportOpen = true"
             />
         </div>
 
         <template v-else>
-            <RouterLink
-                class="game-page__back"
-                :to="{name: ROUTE_NAMES.professions}"
-            >
-                <ArrowLeft
-                    :size="18"
-                    aria-hidden="true"
-                />
-                К колоде
-            </RouterLink>
+            <div class="game-page__top">
+                <RouterLink
+                    class="game-page__back"
+                    :to="{name: ROUTE_NAMES.professions}"
+                >
+                    <ArrowLeft
+                        :size="18"
+                        aria-hidden="true"
+                    />
+                    К колоде
+                </RouterLink>
+                <button
+                    v-if="hasProgress"
+                    class="game-page__back"
+                    type="button"
+                    @click="isResetFormOpen = true"
+                >
+                    <RotateCcw
+                        :size="16"
+                        aria-hidden="true"
+                    />
+                    Начать заново
+                </button>
+            </div>
 
             <div class="game-page__table">
                 <div class="game-page__main">
@@ -101,20 +146,29 @@ function leaveGame() {
                         <h1 class="game-page__title">Смена {{ shift.number }}. {{ shift.title }}</h1>
                         <p class="game-page__lead">{{ shift.lead }}</p>
                     </div>
-                    <ShiftCounters
-                        v-if="!isShiftFinished"
-                        :counters="counters"
+                    <ShiftDifficulty
+                        v-if="needsDifficulty"
+                        @choose="chooseDifficulty"
                     />
                     <ShiftFinale
-                        v-if="isShiftFinished"
+                        v-else-if="isShiftFinished"
                         :shift="shift"
                         :counters="counters"
+                        :next-shift="nextShift"
+                        :ending="chapterEnding"
+                        @next="startNextShift"
+                        @restart="isResetFormOpen = true"
                         @leave="leaveGame"
                     />
                     <template v-else>
-                        <p class="game-page__note">Выбери, с чего начать: подсвеченные комнаты ждут тебя.</p>
+                        <ShiftCounters :counters="counters" />
+                        <ShiftMorning
+                            v-if="morningEvents.length"
+                            :events="morningEvents"
+                        />
+                        <p class="game-page__note">{{ shiftHint ?? PLAN_NOTE }}</p>
                         <ClinicPlan
-                            :shift="shift.number"
+                            :open-room-codes="openRoomCodes"
                             :activities="shift.activities"
                             :statuses="activityStatuses"
                             @open="openActivity"
@@ -130,6 +184,19 @@ function leaveGame() {
                 />
             </div>
         </template>
+
+        <PatientPassport
+            v-if="isPassportOpen && activeActivity"
+            :patient="activeActivity.patient"
+            :chart="activeChart"
+            @close="isPassportOpen = false"
+        />
+        <ResetProgressForm
+            v-if="isResetFormOpen && profession"
+            :profession="profession"
+            @close="isResetFormOpen = false"
+            @reset="handleReset"
+        />
     </div>
 </template>
 
@@ -140,13 +207,25 @@ $card-width: 320px;
     @include padding('y', 6);
     @include padding('bottom', 16);
 
+    &__top {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: $indent-step * 3;
+    }
+
     &__back {
         display: inline-flex;
         align-items: center;
+        cursor: pointer;
         text-decoration: none;
         color: $color-on-playmat-soft;
+        font-size: $font-size-md;
         font-weight: $font-weight-semibold;
         gap: $indent-step * 2;
+
+        @include button-reset;
 
         @include hover {
             color: $color-on-playmat;
