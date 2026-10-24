@@ -1,0 +1,68 @@
+@import './animations';
+
+:root {
+    color-scheme: dark;
+
+    @each $name, $color in $professions {
+        --profession-#{$name}: #{$color};
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    color: $color-on-playmat;
+    background-color: $color-playmat;
+    font-family: $font-primary;
+    font-size: $font-size-md;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+p {
+    margin: 0;
+}
+
+button {
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+}
+
+::selection {
+    color: $color-ink;
+    background-color: $color-action;
+}
+
+:focus-visible {
+    outline: 3px solid $color-action;
+    outline-offset: 3px;
+}
+
+html {
+    scrollbar-color: $color-playmat-light $color-playmat-deep;
+}

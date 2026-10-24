@@ -1,0 +1,21 @@
+/** Влияние ситуаций на репутацию клиники — раздел 4 ТЗ. */
+export const REPUTATION = Object.freeze({
+    exactDiagnosis: 5,
+    strayHelped: 10,
+    parrotSaved: 8,
+    triageNoLosses: 15,
+    triageRightOrder: 10,
+    pigsSaved: 20,
+    extraTests: -5,
+    strayRefused: -10,
+    parrotDied: -15,
+    triageLoss: -10,
+    triageWrongOrder: -8,
+    pigsLost: -20,
+    roughHandling: -3,
+    ownerRefusedToWait: -5,
+    assistantMistake: -5,
+    cheapDrugsRevealed: -3,
+    wrongDiagnosis: -5,
+    missedTests: -5,
+});

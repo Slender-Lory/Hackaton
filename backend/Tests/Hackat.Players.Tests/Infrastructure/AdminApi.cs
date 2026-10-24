@@ -23,9 +23,11 @@ public sealed class AdminApi(HttpClient client)
     }
 
     public Task<ApiResponse<PagedResult<AdminPlayerListItemModel>>> Players(
-        AuthenticationHeaderValue? auth, string? search = null, int offset = 0, int count = 20)
+        AuthenticationHeaderValue? auth, string? search = null, int offset = 0, int count = 20, string? kind = null)
     {
-        var query = $"offset={offset}&count={count}" + (search is null ? "" : $"&search={Uri.EscapeDataString(search)}");
+        var query = $"offset={offset}&count={count}"
+            + (search is null ? "" : $"&search={Uri.EscapeDataString(search)}")
+            + (kind is null ? "" : $"&kind={kind}");
         return Send<PagedResult<AdminPlayerListItemModel>>(HttpMethod.Get, $"/api/v1/admin/players?{query}", auth);
     }
 

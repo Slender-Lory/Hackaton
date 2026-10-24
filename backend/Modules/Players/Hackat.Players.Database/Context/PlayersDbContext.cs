@@ -12,6 +12,8 @@ public class PlayersDbContext(DbContextOptions<PlayersDbContext> options) : DbCo
 
     public DbSet<PlayerProgress> PlayerProgress => Set<PlayerProgress>();
 
+    public DbSet<PlayerSession> PlayerSessions => Set<PlayerSession>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(SchemaName);
@@ -21,10 +23,23 @@ public class PlayersDbContext(DbContextOptions<PlayersDbContext> options) : DbCo
             e.HasKey(u => u.Id);
             e.Property(u => u.Nickname).HasMaxLength(32).IsRequired();
             e.Property(u => u.NormalizedNickname).HasMaxLength(32).IsRequired();
-            e.Property(u => u.GuestTokenHash).HasMaxLength(64).IsRequired();
+            e.Property(u => u.Email).HasMaxLength(254).IsRequired();
+            e.Property(u => u.NormalizedEmail).HasMaxLength(254).IsRequired();
+            e.Property(u => u.PasswordHash).HasMaxLength(256).IsRequired();
 
-            e.HasIndex(u => u.NormalizedNickname).IsUnique();
-            e.HasIndex(u => u.GuestTokenHash).IsUnique();
+            e.HasIndex(u => u.NormalizedEmail).IsUnique();
+        });
+
+        modelBuilder.Entity<PlayerSession>(e =>
+        {
+            e.HasKey(u => u.Id);
+            e.Property(u => u.TokenHash).HasMaxLength(64).IsRequired();
+            e.HasIndex(u => u.TokenHash).IsUnique();
+
+            e.HasOne(u => u.Player)
+                .WithMany(u => u.Sessions)
+                .HasForeignKey(u => u.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PlayerProgress>(e =>

@@ -9,114 +9,318 @@
 <body>
 <main>
   <h1>Вход в игру</h1>
-  <p class="muted">Тестовое меню гостя. <a href="admin.html">Вход для администратора</a></p>
+  <p class="muted">Тестовое меню игрока. <a href="admin.html">Вход для администратора</a></p>
 
-  <section id="enter-panel">
-    <h2>Регистрация и вход</h2>
-    <form id="enter-form" class="row">
-      <div class="grow">
-        <label for="nickname">Никнейм — новый или уже ваш</label>
-        <input id="nickname" maxlength="24" autocomplete="off" placeholder="Например, Вася" required>
+  <!-- Никто не вошёл -->
+  <div id="anonymous-panel">
+    <section>
+      <h2>Играть без регистрации</h2>
+      <form id="guest-form" class="row">
+        <div class="grow">
+          <label for="nickname">Как к вам обращаться</label>
+          <input id="nickname" maxlength="24" autocomplete="off" placeholder="Например, Вася" required>
+        </div>
+        <button type="submit">Играть</button>
+      </form>
+      <p class="muted" style="margin:6px 0 0">Прогресс сохранится только в этом браузере.</p>
+    </section>
+
+    <section>
+      <h2>Вход по почте</h2>
+      <form id="login-form-anon">
+        <div class="row">
+          <div class="grow"><label for="login-email-anon">Почта</label><input id="login-email-anon" type="email" autocomplete="email" required></div>
+          <div class="grow"><label for="login-password-anon">Пароль</label><input id="login-password-anon" type="password" autocomplete="current-password" required></div>
+          <button type="submit">Войти</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Регистрация</h2>
+      <form id="register-form-anon">
+        <div class="row" style="margin-bottom:8px">
+          <div class="grow"><label for="reg-nickname-anon">Никнейм</label><input id="reg-nickname-anon" maxlength="24" autocomplete="off" required></div>
+          <div class="grow"><label for="reg-email-anon">Почта</label><input id="reg-email-anon" type="email" autocomplete="email" required></div>
+        </div>
+        <div class="row">
+          <div class="grow"><label for="reg-password-anon">Пароль (от 8 символов)</label><input id="reg-password-anon" type="password" minlength="8" autocomplete="new-password" required></div>
+          <div class="grow"><label for="reg-password2-anon">Повторите пароль</label><input id="reg-password2-anon" type="password" minlength="8" autocomplete="new-password" required></div>
+          <button type="submit">Зарегистрироваться</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Гость: всё в localStorage -->
+  <div id="guest-panel" hidden>
+    <section>
+      <h2>Вы играете как гость</h2>
+      <div class="row">
+        <p class="grow" style="margin:0">Никнейм: <b id="guest-name"></b></p>
+        <button class="link" id="guest-exit" type="button">Выйти</button>
       </div>
-      <button type="submit">Войти</button>
-    </form>
-    <p id="enter-msg" class="msg"></p>
-  </section>
+      <p class="muted" style="margin:4px 0 0">Прогресс хранится только в этом браузере (localStorage), сервер о нём не знает.</p>
+    </section>
 
-  <section id="account-panel" hidden>
-    <h2>Вы вошли в аккаунт</h2>
-    <div class="row">
-      <p class="grow" style="margin:0">Никнейм: <b id="account-name"></b></p>
-      <button class="link" id="logout" type="button">Выйти</button>
-    </div>
-    <p class="muted" id="account-meta" style="margin:4px 0 0"></p>
-  </section>
+    <section>
+      <h2>Прогресс гостя (для проверки)</h2>
+      <form id="local-progress-form">
+        <div class="row">
+          <div class="grow"><label for="lp-level">День (level)</label><input id="lp-level" type="number" min="0" max="1000" value="1"></div>
+          <div class="grow"><label for="lp-percent">Пройдено, %</label><input id="lp-percent" type="number" min="0" max="100" value="0"></div>
+          <button type="submit">Сохранить в браузере</button>
+        </div>
+      </form>
+      <p class="muted" id="lp-info" style="margin:6px 0 0"></p>
+    </section>
+
+    <section>
+      <h2>Сохранить прогресс — зарегистрироваться</h2>
+      <p class="muted" style="margin:0 0 8px">Аккаунт создастся сразу с прогрессом из браузера, играть можно будет с любого устройства.</p>
+      <form id="register-form-guest">
+        <div class="row">
+          <div class="grow"><label for="reg-email-guest">Почта</label><input id="reg-email-guest" type="email" autocomplete="email" required></div>
+          <div class="grow"><label for="reg-password-guest">Пароль (от 8 символов)</label><input id="reg-password-guest" type="password" minlength="8" autocomplete="new-password" required></div>
+          <div class="grow"><label for="reg-password2-guest">Повторите пароль</label><input id="reg-password2-guest" type="password" minlength="8" autocomplete="new-password" required></div>
+          <button type="submit">Сохранить</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Уже есть аккаунт?</h2>
+      <p class="muted" style="margin:0 0 8px">Прогресс из браузера перейдёт в профессии, которые в аккаунте ещё не начаты.</p>
+      <form id="login-form-guest">
+        <div class="row">
+          <div class="grow"><label for="login-email-guest">Почта</label><input id="login-email-guest" type="email" autocomplete="email" required></div>
+          <div class="grow"><label for="login-password-guest">Пароль</label><input id="login-password-guest" type="password" autocomplete="current-password" required></div>
+          <button type="submit">Войти</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Аккаунт -->
+  <div id="account-panel" hidden>
+    <section>
+      <h2>Вы вошли в аккаунт</h2>
+      <div class="row">
+        <p class="grow" style="margin:0">Никнейм: <b id="account-name"></b></p>
+        <button class="link" id="logout" type="button">Выйти</button>
+      </div>
+      <p class="muted" id="account-meta" style="margin:4px 0 0"></p>
+      <table style="margin-top:8px">
+        <thead><tr><th>Профессия</th><th>Уровень</th><th>Пройдено</th><th>Сохранено</th></tr></thead>
+        <tbody id="progress-rows"></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Удалить аккаунт</h2>
+      <p class="muted" style="margin:0 0 8px">Удалятся аккаунт, прогресс и вход на всех устройствах. Отменить нельзя.</p>
+      <form id="delete-form" class="row">
+        <div class="grow"><label for="delete-password">Пароль</label><input id="delete-password" type="password" autocomplete="current-password" required></div>
+        <button type="submit" class="link">Удалить аккаунт</button>
+      </form>
+    </section>
+  </div>
+
+  <p id="msg" class="msg"></p>
 </main>
 
 <script>
-  // Токены гостей, созданных в этом браузере: [{ playerId, nickname, token }].
-  // Сервер выдаёт токен один раз — при создании игрока; по нему же пускает обратно по никнейму.
-  const GUESTS_KEY = "hackat.guests";
-  const CURRENT_KEY = "hackat.currentPlayerId";
+  // localStorage:
+  //   hackat.token — токен сессии аккаунта (Authorization: Player <token>);
+  //   hackat.guest — гость целиком: { nickname, progress: { vet: { level, percent, difficulty, state } } }.
+  const TOKEN_KEY = "hackat.token";
+  const GUEST_KEY = "hackat.guest";
+  const VET = "vet";
 
-  const storage = {
-    read(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
-    },
-    write(key, value) {
-      try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* приватный режим */ }
+  const store = {
+    get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
+    set(key, value) {
+      try { value === null ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(value)); } catch { /* приватный режим */ }
     },
   };
 
-  const guests = () => storage.read(GUESTS_KEY, []);
-  const currentId = () => storage.read(CURRENT_KEY, null);
-  const normalize = (s) => s.trim().replace(/\s+/g, " ").toLowerCase();
-  const $ = (id) => document.getElementById(id);
+  // Ключи прошлых версий страницы больше не нужны.
+  try { ["hackat.guests", "hackat.currentPlayerId"].forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
 
-  async function api(method, path, { body, token } = {}) {
+  const $ = (id) => document.getElementById(id);
+  let profile = null;
+
+  async function api(method, path, body) {
     const headers = {};
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    if (token) headers["Authorization"] = `Guest ${token}`;
+    const token = store.get(TOKEN_KEY);
+    if (token) headers["Authorization"] = `Player ${token}`;
     try {
       const res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
-      return { ok: res.ok, result: data?.result, error: data?.error ?? (res.ok ? null : { message: `Ошибка ${res.status}` }) };
+      return { ok: res.ok, status: res.status, result: data?.result, error: data?.error ?? (res.ok ? null : { message: `Ошибка ${res.status}` }) };
     } catch (e) {
-      return { ok: false, error: { message: `Нет связи с сервером: ${e.message}` } };
+      return { ok: false, status: 0, error: { message: `Нет связи с сервером: ${e.message}` } };
     }
   }
 
   function showMsg(text, ok) {
-    $("enter-msg").textContent = text;
-    $("enter-msg").className = `msg ${ok ? "ok" : "err"}`;
+    $("msg").textContent = text;
+    $("msg").className = `msg ${ok ? "ok" : "err"}`;
   }
 
-  function showAccount(player) {
-    $("account-name").textContent = player.nickname;
-    $("account-meta").textContent = `Аккаунт создан ${new Date(player.createdAt).toLocaleString("ru-RU")}`;
-    $("account-panel").hidden = false;
-    $("enter-panel").hidden = true;
+  const fmt = (d) => d ? new Date(d).toLocaleString("ru-RU") : "—";
+
+  // Прогресс гостя в формате API: [{ professionCode, level, percent, difficulty, state }].
+  function guestProgress() {
+    const guest = store.get(GUEST_KEY);
+    return Object.entries(guest?.progress ?? {}).map(([professionCode, p]) => ({ professionCode, ...p }));
   }
 
-  function logout() {
-    storage.write(CURRENT_KEY, null);
-    $("account-panel").hidden = true;
-    $("enter-panel").hidden = false;
-    showMsg("", true);
+  function render() {
+    const guest = store.get(GUEST_KEY);
+    $("account-panel").hidden = !profile;
+    $("guest-panel").hidden = !!profile || !guest;
+    $("anonymous-panel").hidden = !!profile || !!guest;
+
+    if (profile) {
+      $("account-name").textContent = profile.player.nickname;
+      $("account-meta").textContent = `Почта: ${profile.player.email}`;
+      const rows = $("progress-rows");
+      rows.replaceChildren();
+      for (const p of profile.progress) {
+        const tr = document.createElement("tr");
+        [p.professionTitle, p.level, `${p.percent}%`, p.revision ? fmt(p.updatedAt) : "не начата"].forEach((v) => {
+          const td = document.createElement("td");
+          td.textContent = v;
+          tr.append(td);
+        });
+        rows.append(tr);
+      }
+    } else if (guest) {
+      $("guest-name").textContent = guest.nickname;
+      const vet = guest.progress?.[VET];
+      $("lp-info").textContent = vet
+        ? `В браузере: день ${vet.level}, ${vet.percent}%. Обновите страницу — прогресс останется.`
+        : "Прогресса пока нет.";
+      if (vet) { $("lp-level").value = vet.level; $("lp-percent").value = vet.percent; }
+    }
   }
 
-  $("enter-form").addEventListener("submit", async (e) => {
+  async function loadProfile() {
+    if (!store.get(TOKEN_KEY)) { profile = null; return; }
+    const r = await api("GET", "/api/v1/players/me");
+    if (r.ok) profile = r.result;
+    else { profile = null; store.set(TOKEN_KEY, null); }
+  }
+
+  // Успешные регистрация / вход: прогресс гостя уже на сервере — локальный гость больше не нужен.
+  async function signedIn(result, message) {
+    store.set(TOKEN_KEY, result.token);
+    store.set(GUEST_KEY, null);
+    document.querySelectorAll("form").forEach((f) => f.reset());
+    await loadProfile();
+    render();
+    const parts = [message];
+    if (result.importedProfessions.length) parts.push(`Перенесён прогресс из браузера: ${result.importedProfessions.join(", ")}.`);
+    if (result.skippedProfessions.length) parts.push(`В аккаунте уже был прогресс, из браузера не перенесён: ${result.skippedProfessions.join(", ")}.`);
+    showMsg(parts.join(" "), true);
+  }
+
+  function passwordsMatch(a, b) {
+    if ($(a).value === $(b).value) return true;
+    showMsg("Пароли не совпадают", false);
+    return false;
+  }
+
+  async function submit(e, request, onSuccess) {
     e.preventDefault();
-    const nickname = $("nickname").value;
-    const known = guests().find((g) => normalize(g.nickname) === normalize(nickname));
+    const r = await request();
+    if (!r) return;
+    if (!r.ok) { showMsg(r.error.message, false); return; }
+    await onSuccess(r.result);
+  }
 
-    const r = await api("POST", "/api/v1/players/enter", { body: { nickname }, token: known?.token });
-    if (!r.ok) {
-      showMsg(r.error.message, false);
-      return;
-    }
-
-    const { player, isNew, guestToken } = r.result;
-    if (isNew) {
-      storage.write(GUESTS_KEY, [...guests().filter((g) => g.playerId !== player.id),
-        { playerId: player.id, nickname: player.nickname, token: guestToken }]);
-    }
-    storage.write(CURRENT_KEY, player.id);
-    $("nickname").value = "";
-    showAccount(player);
+  // ── Гость ──────────────────────────────────────────────────────────
+  $("guest-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nickname = $("nickname").value.trim().replace(/\s+/g, " ");
+    if (nickname.length < 2) { showMsg("Никнейм должен быть не короче 2 символов", false); return; }
+    store.set(GUEST_KEY, { nickname, progress: {} });
+    render();
+    showMsg(`Привет, ${nickname}! Можно играть.`, true);
   });
 
-  $("logout").addEventListener("click", logout);
+  $("local-progress-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const guest = store.get(GUEST_KEY);
+    const level = Number($("lp-level").value);
+    guest.progress[VET] = {
+      level,
+      percent: Number($("lp-percent").value),
+      difficulty: "Normal",
+      state: { day: level, scene: "test-menu" },
+    };
+    store.set(GUEST_KEY, guest);
+    render();
+    showMsg("Прогресс сохранён в браузере", true);
+  });
 
-  // Если в этом браузере уже выполнен вход — проверяем токен и показываем аккаунт.
-  (async () => {
-    const guest = guests().find((g) => g.playerId === currentId());
-    if (!guest) return;
-    const r = await api("GET", "/api/v1/players/me", { token: guest.token });
-    if (r.ok) showAccount(r.result.player);
-    else logout();
-  })();
+  $("guest-exit").addEventListener("click", () => {
+    if (!confirm("Прогресс гостя хранится только в этом браузере и будет удалён. Выйти?")) return;
+    store.set(GUEST_KEY, null);
+    render();
+    showMsg("Вы вышли", true);
+  });
+
+  // ── Регистрация и вход ─────────────────────────────────────────────
+  $("register-form-anon").addEventListener("submit", (e) => submit(e,
+    () => passwordsMatch("reg-password-anon", "reg-password2-anon") && api("POST", "/api/v1/players/register", {
+      nickname: $("reg-nickname-anon").value, email: $("reg-email-anon").value, password: $("reg-password-anon").value,
+    }),
+    (res) => signedIn(res, "Аккаунт создан, прогресс будет сохраняться.")));
+
+  $("register-form-guest").addEventListener("submit", (e) => submit(e,
+    () => passwordsMatch("reg-password-guest", "reg-password2-guest") && api("POST", "/api/v1/players/register", {
+      nickname: store.get(GUEST_KEY).nickname,
+      email: $("reg-email-guest").value,
+      password: $("reg-password-guest").value,
+      progress: guestProgress(),
+    }),
+    (res) => signedIn(res, "Готово: аккаунт создан с вашим прогрессом.")));
+
+  $("login-form-anon").addEventListener("submit", (e) => submit(e,
+    () => api("POST", "/api/v1/players/login", { email: $("login-email-anon").value, password: $("login-password-anon").value }),
+    (res) => signedIn(res, `С возвращением, ${res.player.nickname}!`)));
+
+  $("login-form-guest").addEventListener("submit", (e) => submit(e,
+    () => api("POST", "/api/v1/players/login", {
+      email: $("login-email-guest").value, password: $("login-password-guest").value, progress: guestProgress(),
+    }),
+    (res) => signedIn(res, `С возвращением, ${res.player.nickname}!`)));
+
+  // ── Аккаунт ────────────────────────────────────────────────────────
+  $("logout").addEventListener("click", async () => {
+    await api("POST", "/api/v1/players/logout");
+    store.set(TOKEN_KEY, null);
+    profile = null;
+    render();
+    showMsg("Вы вышли", true);
+  });
+
+  $("delete-form").addEventListener("submit", (e) => submit(e,
+    () => confirm("Удалить аккаунт и весь прогресс? Отменить нельзя.")
+      && api("DELETE", "/api/v1/players/me", { password: $("delete-password").value }),
+    () => {
+      store.set(TOKEN_KEY, null);
+      profile = null;
+      $("delete-form").reset();
+      render();
+      showMsg("Аккаунт удалён", true);
+    }));
+
+  (async () => { await loadProfile(); render(); })();
 </script>
 </body>
 </html>

@@ -33,6 +33,32 @@ internal sealed class ProgressDatabaseQueries(PlayersDbContext dc) : IProgressDa
         }
     }
 
+    public async Task<string[]> AddMissing(Guid playerId, PlayerProgress[] items)
+    {
+        if (items.Length == 0)
+            return [];
+
+        var existing = await dc.PlayerProgress
+            .Where(u => u.PlayerId == playerId)
+            .Select(u => u.ProfessionCode)
+            .ToArrayAsync();
+
+        var missing = items.Where(u => !existing.Contains(u.ProfessionCode)).ToArray();
+        dc.PlayerProgress.AddRange(missing);
+        try
+        {
+            await dc.SaveChangesAsync();
+        }
+        catch (DbUpdateException e) when (e.IsUniqueViolation())
+        {
+            // Параллельно успели сохранить с другого устройства — оставляем прогресс аккаунта.
+            dc.ChangeTracker.Clear();
+            return [];
+        }
+
+        return missing.Select(u => u.ProfessionCode).ToArray();
+    }
+
     public async Task<bool> TrySaveChanges()
     {
         try

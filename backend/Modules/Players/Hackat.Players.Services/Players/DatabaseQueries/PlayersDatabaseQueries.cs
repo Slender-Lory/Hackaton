@@ -9,20 +9,16 @@ internal sealed class PlayersDatabaseQueries(PlayersDbContext dc) : IPlayersData
 {
     public Task<Player?> GetById(Guid id, bool trackChanges = false) =>
         dc.Players
-            .AsTracking(trackChanges ? QueryTrackingBehavior.TrackAll : QueryTrackingBehavior.NoTracking)
+            .AsTracking(Tracking(trackChanges))
             .FirstOrDefaultAsync(u => u.Id == id);
 
-    public Task<Player?> GetByNormalizedNickname(string normalizedNickname) =>
+    public Task<Player?> GetByNormalizedEmail(string normalizedEmail, bool trackChanges = false) =>
         dc.Players
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.NormalizedNickname == normalizedNickname);
+            .AsTracking(Tracking(trackChanges))
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
 
-    public Task<Guid?> GetIdByGuestTokenHash(string guestTokenHash) =>
-        dc.Players
-            .AsNoTracking()
-            .Where(u => u.GuestTokenHash == guestTokenHash)
-            .Select(u => (Guid?)u.Id)
-            .FirstOrDefaultAsync();
+    public Task<bool> IsEmailTaken(string normalizedEmail) =>
+        dc.Players.AnyAsync(u => u.NormalizedEmail == normalizedEmail);
 
     public async Task<bool> TryAdd(Player player)
     {
@@ -39,8 +35,18 @@ internal sealed class PlayersDatabaseQueries(PlayersDbContext dc) : IPlayersData
         }
     }
 
+    public Task SaveChanges() => dc.SaveChangesAsync();
+
     public Task TouchLastSeen(Guid id, DateTimeOffset now) =>
         dc.Players
             .Where(u => u.Id == id)
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastSeenAt, now));
+
+    public Task Delete(Guid id) =>
+        dc.Players
+            .Where(u => u.Id == id)
+            .ExecuteDeleteAsync();
+
+    private static QueryTrackingBehavior Tracking(bool trackChanges) =>
+        trackChanges ? QueryTrackingBehavior.TrackAll : QueryTrackingBehavior.NoTracking;
 }

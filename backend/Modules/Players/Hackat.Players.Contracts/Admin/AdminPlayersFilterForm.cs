@@ -4,8 +4,8 @@ namespace Hackat.Players.Contracts.Admin;
 
 public sealed class AdminPlayersFilterForm
 {
-    /// <summary>Часть никнейма (без учёта регистра).</summary>
-    [MaxLength(32)]
+    /// <summary>Часть никнейма или почты (без учёта регистра).</summary>
+    [MaxLength(254)]
     public string? Search { get; init; }
 
     [Range(0, int.MaxValue)]

@@ -32,10 +32,10 @@ namespace Hackat.Players.Database.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("GuestTokenHash")
+                    b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
 
                     b.Property<DateTimeOffset>("LastSeenAt")
                         .HasColumnType("timestamp with time zone");
@@ -45,17 +45,24 @@ namespace Hackat.Players.Database.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
                     b.Property<string>("NormalizedNickname")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("GuestTokenHash")
-                        .IsUnique();
-
-                    b.HasIndex("NormalizedNickname")
+                    b.HasIndex("NormalizedEmail")
                         .IsUnique();
 
                     b.ToTable("Players", "players");
@@ -106,6 +113,41 @@ namespace Hackat.Players.Database.Migrations
                     b.ToTable("PlayerProgress", "players");
                 });
 
+            modelBuilder.Entity("Hackat.Players.Database.Entities.PlayerSession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("PlayerSessions", "players");
+                });
+
             modelBuilder.Entity("Hackat.Players.Database.Entities.PlayerProgress", b =>
                 {
                     b.HasOne("Hackat.Players.Database.Entities.Player", "Player")
@@ -117,9 +159,22 @@ namespace Hackat.Players.Database.Migrations
                     b.Navigation("Player");
                 });
 
+            modelBuilder.Entity("Hackat.Players.Database.Entities.PlayerSession", b =>
+                {
+                    b.HasOne("Hackat.Players.Database.Entities.Player", "Player")
+                        .WithMany("Sessions")
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
+                });
+
             modelBuilder.Entity("Hackat.Players.Database.Entities.Player", b =>
                 {
                     b.Navigation("Progress");
+
+                    b.Navigation("Sessions");
                 });
 #pragma warning restore 612, 618
         }

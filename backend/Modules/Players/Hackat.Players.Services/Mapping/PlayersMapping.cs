@@ -11,7 +11,7 @@ namespace Hackat.Players.Services.Mapping;
 internal static class PlayersMapping
 {
     public static PlayerModel ToModel(this Player player) =>
-        new(player.Id, player.Nickname, player.CreatedAt);
+        new(player.Id, player.Nickname, player.Email, player.CreatedAt);
 
     public static ProgressModel ToModel(this PlayerProgress progress) =>
         new(
@@ -28,6 +28,7 @@ internal static class PlayersMapping
         new(
             player.Id,
             player.Nickname,
+            player.Email,
             player.CreatedAt,
             player.LastSeenAt,
             player.Progress

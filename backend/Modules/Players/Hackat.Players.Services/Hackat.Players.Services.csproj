@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- PasswordHasher<T> из ASP.NET Core Identity -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Common\Hackat.Common.Result\Hackat.Common.Result.csproj" />
     <ProjectReference Include="..\Hackat.Players.Contracts\Hackat.Players.Contracts.csproj" />
     <ProjectReference Include="..\Hackat.Players.Database\Hackat.Players.Database.csproj" />

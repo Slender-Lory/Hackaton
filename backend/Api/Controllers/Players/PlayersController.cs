@@ -6,6 +6,7 @@ using Hackat.Players.Services.Players;
 using Hackat.Players.Services.Progress;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Controllers.Players;
 
@@ -16,13 +17,38 @@ public sealed class PlayersController(
     IProgressService progressService) : ApiControllerBase
 {
     /// <summary>
-    /// Вход по никнейму. Новый никнейм — создаётся гость, в ответе guestToken (сохранить на фронте!).
-    /// Существующий — нужен заголовок <c>Authorization: Guest &lt;token&gt;</c> его владельца, иначе 409 NicknameTaken.
+    /// Регистрация по почте и паролю. Гость передаёт свой прогресс из localStorage в progress —
+    /// аккаунт создаётся сразу с ним. В ответе token сессии этого устройства.
     /// </summary>
-    [HttpPost("enter")]
+    [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<ActionResult<AppResult<EnterResultModel>>> Enter([FromBody] EnterForm form) =>
-        AppResult(await playersService.Enter(form, CurrentPlayerId));
+    [EnableRateLimiting(AuthRateLimits.PlayerAuth)]
+    public async Task<ActionResult<AppResult<AuthResultModel>>> Register([FromBody] RegisterForm form) =>
+        AppResult(await playersService.Register(form));
+
+    /// <summary>
+    /// Вход по почте и паролю. Прогресс гостя из localStorage (progress) переносится в профессии,
+    /// не начатые в аккаунте (importedProfessions); где начаты — остаётся прогресс аккаунта (skippedProfessions).
+    /// </summary>
+    [HttpPost("login")]
+    [AllowAnonymous]
+    [EnableRateLimiting(AuthRateLimits.PlayerAuth)]
+    public async Task<ActionResult<AppResult<AuthResultModel>>> Login([FromBody] LoginForm form) =>
+        AppResult(await playersService.Login(form));
+
+    /// <summary>Выход с этого устройства: токен перестаёт работать, другие устройства не затрагиваются.</summary>
+    [HttpPost("logout")]
+    public async Task<ActionResult<AppResult<bool>>> Logout()
+    {
+        await playersService.Logout(RequiredSession);
+        return AppResult(true);
+    }
+
+    /// <summary>Удаление аккаунта вместе с прогрессом и сессиями на всех устройствах. Нужен пароль.</summary>
+    [HttpDelete("me")]
+    [EnableRateLimiting(AuthRateLimits.PlayerAuth)]
+    public async Task<ActionResult<AppResult<bool>>> DeleteAccount([FromBody] DeleteAccountForm form) =>
+        AppResult(await playersService.DeleteAccount(RequiredPlayerId, form));
 
     /// <summary>Профиль текущего игрока с прогрессом по всем профессиям.</summary>
     [HttpGet("me")]

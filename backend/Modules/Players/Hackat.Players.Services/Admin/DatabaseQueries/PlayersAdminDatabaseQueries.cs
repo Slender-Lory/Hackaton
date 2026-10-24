@@ -6,8 +6,8 @@ namespace Hackat.Players.Services.Admin.DatabaseQueries;
 
 internal sealed class PlayersAdminDatabaseQueries(PlayersDbContext dc) : IPlayersAdminDatabaseQueries
 {
-    public Task<Player[]> Search(string? normalizedSearch, int offset, int count) =>
-        BaseQuery(normalizedSearch)
+    public Task<Player[]> Search(PlayersSearch search, int offset, int count) =>
+        BaseQuery(search)
             .OrderByDescending(u => u.LastSeenAt)
             .ThenBy(u => u.Id)
             .Skip(offset)
@@ -15,8 +15,8 @@ internal sealed class PlayersAdminDatabaseQueries(PlayersDbContext dc) : IPlayer
             .Include(u => u.Progress)
             .ToArrayAsync();
 
-    public Task<int> Count(string? normalizedSearch) =>
-        BaseQuery(normalizedSearch).CountAsync();
+    public Task<int> Count(PlayersSearch search) =>
+        BaseQuery(search).CountAsync();
 
     public Task<int> CountCreatedSince(DateTimeOffset since) =>
         dc.Players.CountAsync(u => u.CreatedAt >= since);
@@ -34,11 +34,17 @@ internal sealed class PlayersAdminDatabaseQueries(PlayersDbContext dc) : IPlayer
                 g.Average(u => (double)u.Percent)))
             .ToArrayAsync();
 
-    private IQueryable<Player> BaseQuery(string? normalizedSearch)
+    private IQueryable<Player> BaseQuery(PlayersSearch search)
     {
         var query = dc.Players.AsNoTracking();
-        return string.IsNullOrEmpty(normalizedSearch)
-            ? query
-            : query.Where(u => u.NormalizedNickname.Contains(normalizedSearch));
+
+        if (search.NicknameKey is { } nickname && search.EmailPart is { } email)
+        {
+            query = query.Where(u =>
+                u.NormalizedNickname.Contains(nickname)
+                || u.NormalizedEmail.Contains(email));
+        }
+
+        return query;
     }
 }
