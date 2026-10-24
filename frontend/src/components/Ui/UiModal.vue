@@ -1,48 +1,55 @@
 <script setup>
-import {onBeforeUnmount, onMounted} from 'vue';
+import {
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogOverlay,
+    DialogPortal,
+    DialogRoot,
+    DialogTitle,
+} from 'reka-ui';
+import {X} from 'lucide-vue-next';
 
 defineProps({
-    // id заголовка внутри модалки — для aria-labelledby
-    labelledby: {type: String, required: true},
+    title: {type: String, required: true},
+    description: {type: String, default: ''},
 });
 
 const emit = defineEmits(['close']);
 
-onMounted(() => document.addEventListener('keydown', handleKeydown));
-onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
-
-/** @param {KeyboardEvent} event */
-function handleKeydown(event) {
-    if (event.key === 'Escape') {
+/** @param {boolean} isOpen */
+function handleOpenChange(isOpen) {
+    if (!isOpen) {
         emit('close');
     }
 }
 </script>
 
 <template>
-    <Teleport to="body">
-        <div
-            class="ui-modal"
-            @click.self="emit('close')"
-        >
-            <div
-                class="ui-modal__window"
-                role="dialog"
-                aria-modal="true"
-                :aria-labelledby="labelledby"
-            >
-                <slot />
-                <button
-                    class="ui-modal__close"
-                    type="button"
-                    aria-label="Закрыть"
-                    @click="emit('close')"
+    <DialogRoot
+        :open="true"
+        @update:open="handleOpenChange"
+    >
+        <DialogPortal>
+            <DialogOverlay class="ui-modal" />
+            <DialogContent class="ui-modal__window">
+                <DialogTitle class="ui-modal__title">{{ title }}</DialogTitle>
+                <DialogDescription
+                    v-if="description"
+                    class="ui-modal__description"
                 >
-                    ✕
-                </button>
-            </div>
-        </div>
-    </Teleport>
+                    {{ description }}
+                </DialogDescription>
+                <slot />
+                <DialogClose
+                    class="ui-modal__close"
+                    aria-label="Закрыть"
+                >
+                    <X :size="20" />
+                </DialogClose>
+            </DialogContent>
+        </DialogPortal>
+    </DialogRoot>
 </template>
 
 <style lang="scss">
@@ -52,38 +59,60 @@ $close-size: 40px;
     position: fixed;
     z-index: $ui-index-4;
     inset: 0;
-    padding: $page-gutter;
-    animation: fade-in 0.2s ease both;
-    background: $color-overlay;
-    backdrop-filter: blur(3px);
-
-    @include flex-center;
+    animation: fade-in $duration ease both;
+    background-color: $color-overlay;
+    backdrop-filter: blur(6px);
 
     &__window {
-        position: relative;
-        width: min(400px, 100%);
-        padding: ($indent-step * 7) ($indent-step * 6) ($indent-step * 6);
+        position: fixed;
+        z-index: $ui-index-4;
+        top: 50%;
+        left: 50%;
+        width: min(420px, calc(100% - #{$page-gutter * 2}));
+        transform: translate(-50%, -50%);
+        animation: ui-modal-deal $duration-slow $ease-out both;
+        color: $color-ink;
 
-        @include surface($shadow-overlay);
-        @include appear(rise-in, 0.4s);
+        @include card-face;
+        @include column($indent-step * 4);
+        @include padding('y', 7);
+        @include padding('x', 6);
+    }
+
+    &__title {
+        padding-right: $close-size;
+
+        @include display($font-size-xl);
+    }
+
+    &__description {
+        color: $color-ink-soft;
+        font-size: $font-size-sm;
     }
 
     &__close {
         position: absolute;
-        top: $indent-step * 3;
-        right: $indent-step * 3;
+        top: $indent-step * 4;
+        right: $indent-step * 4;
         width: $close-size;
         height: $close-size;
-        color: $color-text-secondary;
+        color: $color-ink-soft;
         border-radius: 50%;
-        font-size: $font-size-lg;
 
         @include button-reset;
         @include flex-center;
 
         @include hover {
-            background: $color-surface-muted;
+            color: $color-ink;
+            background-color: $color-card-text-box;
         }
+    }
+}
+
+@keyframes ui-modal-deal {
+    from {
+        transform: translate(-50%, calc(-50% + 30px)) rotate(-4deg) scale(0.94);
+        opacity: 0;
     }
 }
 </style>

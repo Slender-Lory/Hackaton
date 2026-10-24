@@ -1,4 +1,3 @@
-/** localStorage, который не падает в приватном режиме и при запрете хранилища. */
 export const safeStorage = {
     /**
      * @param {string} key
@@ -26,7 +25,7 @@ export const safeStorage = {
 
             localStorage.setItem(key, value);
         } catch {
-            // Хранилище недоступно — работаем без него
+            return;
         }
     },
 };

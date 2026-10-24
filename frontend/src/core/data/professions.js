@@ -1,44 +1,50 @@
 /** @typedef {import('@/core/types/profession').Profession} Profession */
 
-/**
- * Профессии экрана выбора. Новая профессия = новая запись.
- * code совпадает с ProfessionCatalog на backend'е (там пока только vet).
- * @type {readonly Profession[]}
- */
+/** @type {readonly Profession[]} */
 export const professions = Object.freeze([
     {
         code: 'vet',
         title: 'Ветеринар',
-        tagline: 'Лечи зверей и спасай ферму',
-        icon: '🐾',
+        kind: 'Медицина и животные',
+        patient: {name: 'Барон', model: '/models/shiba-inu.glb'},
+        tagline: 'Три смены, вспышка ящура на свиноферме и пациенты, которые не умеют сказать, где болит.',
+        stats: [
+            {icon: 'calendar', label: 'Смены', value: '3'},
+            {icon: 'clock', label: 'Время', value: '30–40 мин'},
+            {icon: 'paw', label: 'Пациенты', value: '3 и стадо'},
+        ],
         isAvailable: true,
     },
     {
         code: 'agro',
         title: 'Агроном',
-        tagline: 'Дрон, поле и урожай',
-        icon: '🌾',
+        kind: 'Поле и урожай',
+        tagline: 'Дрон, почва и погода против урожая.',
+        stats: [],
         isAvailable: false,
     },
     {
         code: 'zootech',
         title: 'Зоотехник',
-        tagline: 'Здоровое стадо — твоя забота',
-        icon: '🐄',
+        kind: 'Ферма',
+        tagline: 'Стадо, корма и порядок на ферме.',
+        stats: [],
         isAvailable: false,
     },
     {
         code: 'drone',
         title: 'Оператор агродронов',
-        tagline: 'Пилот над полями',
-        icon: '🚁',
+        kind: 'Техника',
+        tagline: 'Съёмка и обработка полей с воздуха.',
+        stats: [],
         isAvailable: false,
     },
     {
         code: 'eco',
         title: 'Эколог',
-        tagline: 'Чистая река и степь',
-        icon: '🌿',
+        kind: 'Природа',
+        tagline: 'Вода, почва и чистота у Дона.',
+        stats: [],
         isAvailable: false,
     },
 ]);

@@ -1,5 +1,3 @@
-// Повторяющиеся (≥3 раз) сочетания свойств.
-
 @mixin flex-center {
     display: flex;
     align-items: center;
@@ -8,16 +6,8 @@
 
 @mixin column($gap: $indent-step * 3) {
     display: flex;
-    align-items: center;
     flex-direction: column;
     gap: $gap;
-}
-
-// Карточка-поверхность: фон, скругление, тень
-@mixin surface($shadow: $shadow-md) {
-    border-radius: $radius-lg;
-    background: $color-surface;
-    box-shadow: $shadow;
 }
 
 @mixin button-reset {
@@ -26,11 +16,44 @@
     background: transparent;
 }
 
-// Одноразовое появление «с пружиной»; $order — номер элемента для поочерёдного появления
-@mixin appear($name: pop-in, $duration: 0.55s, $order: null) {
-    animation: $name $duration $ease-back-out both;
+@mixin display($size: $font-size-xl) {
+    letter-spacing: -0.01em;
+    font-family: $font-display;
+    font-size: $size;
+    font-weight: $font-weight-regular;
+    line-height: 1.02;
+}
 
-    @if $order {
-        animation-delay: calc(#{$order} * #{$stagger-step});
-    }
+@mixin chip($background: $color-card-text-box, $color: $color-ink) {
+    display: inline-flex;
+    align-items: center;
+    color: $color;
+    border-radius: $radius-chip;
+    background-color: $background;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    gap: $indent-step;
+
+    @include padding('y', 1);
+    @include padding('x', 3);
+}
+
+@mixin card-face {
+    border: 6px solid $color-accent;
+    border-radius: $radius-card;
+    background-color: $color-card-face;
+    box-shadow: $shadow-card;
+}
+
+@mixin card-back {
+    border: 6px solid $color-white;
+    border-radius: $radius-card;
+    background-color: $color-card-back;
+    background-image:
+        radial-gradient(circle at 50% 50%, $color-card-back-pattern 0 2px, transparent 3px),
+        repeating-linear-gradient(45deg, rgba($color-white, 7%) 0 10px, transparent 10px 20px);
+    background-size:
+        18px 18px,
+        auto;
+    box-shadow: $shadow-card;
 }

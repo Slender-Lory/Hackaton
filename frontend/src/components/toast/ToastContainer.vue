@@ -36,16 +36,23 @@ const toastStore = useToastStore();
     gap: $indent-step * 2;
 
     .toast {
-        color: $color-white;
-        border-radius: $radius-pill;
-        background: $color-text-primary;
-        box-shadow: $shadow-toast;
-        font-weight: $font-weight-extra-bold;
+        display: flex;
+        align-items: center;
+        color: $color-ink;
+        border-radius: $radius-button;
+        background-color: $color-white;
+        box-shadow: $shadow-card;
+        font-weight: $font-weight-semibold;
+        gap: $indent-step * 2;
 
         @include padding('y', 3);
-        @include padding('x', 6);
+        @include padding('x', 5);
 
-        // Классы <TransitionGroup name="toast"> — имена задаёт Vue
+        &__icon {
+            flex-shrink: 0;
+            color: $color-card-back;
+        }
+
         &-enter-active,
         &-leave-active {
             transition:
@@ -55,7 +62,7 @@ const toastStore = useToastStore();
 
         &-enter-from,
         &-leave-to {
-            transform: translateY($indent-step * 4);
+            transform: translateY($indent-step * 4) scale(0.95);
             opacity: 0;
         }
     }

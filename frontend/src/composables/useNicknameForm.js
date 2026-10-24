@@ -3,10 +3,7 @@ import {getErrorMessage} from '@/core/helpers/getErrorMessage';
 import {usePlayerStore} from '@/core/stores/player';
 import {validateNickname} from '@/core/utils/nicknameValidation';
 
-/**
- * Форма входа по никнейму: проверка, отправка, ошибка для игрока.
- * @param {(player: import('@/core/types/player').Player) => void} onEntered
- */
+/** @param {(player: import('@/core/types/player').Player) => void} onEntered */
 export function useNicknameForm(onEntered) {
     const playerStore = usePlayerStore();
 

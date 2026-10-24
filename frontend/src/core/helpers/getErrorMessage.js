@@ -1,7 +1,6 @@
 import {ApiError} from '@/core/api/client';
 
 /**
- * Сообщение для игрока: error.message из ответа backend'а ({result, error}) или общий текст.
  * @param {unknown} error
  * @returns {string}
  */
@@ -14,15 +13,11 @@ export function getErrorMessage(error) {
         return 'Нет связи с сервером';
     }
 
+    const fallback = `Ошибка ${error.status}`;
+
     try {
-        const message = JSON.parse(error.body)?.error?.message;
-
-        if (message) {
-            return message;
-        }
+        return JSON.parse(error.body)?.error?.message || fallback;
     } catch {
-        // Тело не JSON — ниже общий текст
+        return fallback;
     }
-
-    return `Ошибка ${error.status}`;
 }

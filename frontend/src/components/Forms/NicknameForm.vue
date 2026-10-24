@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, ref} from 'vue';
+import {Play} from 'lucide-vue-next';
 import {NICKNAME_MAX_LENGTH} from '@/core/constants';
 import {useNicknameForm} from '@/composables/useNicknameForm';
 
@@ -10,11 +10,6 @@ const emit = defineEmits(['close', 'entered']);
 
 const {nickname, errorMessage, isSubmitting, submit, resetError} = useNicknameForm(handleEntered);
 
-/** @type {import('vue').Ref<HTMLInputElement | null>} */
-const input = ref(null);
-
-onMounted(() => input.value?.focus());
-
 /** @param {import('@/core/types/player').Player} player */
 function handleEntered(player) {
     emit('entered', player);
@@ -23,26 +18,14 @@ function handleEntered(player) {
 
 <template>
     <UiModal
-        labelledby="nickname-form-title"
+        title="Как тебя зовут?"
+        description="Так к тебе будут обращаться в клинике. Регистрация не нужна: прогресс сохранится в этом браузере."
         @close="emit('close')"
     >
         <form
             class="nickname-form"
             @submit.prevent="submit"
         >
-            <div
-                class="nickname-form__mascot"
-                aria-hidden="true"
-            >
-                🐈
-            </div>
-            <h2
-                id="nickname-form-title"
-                class="nickname-form__title"
-            >
-                Как тебя зовут, доктор?
-            </h2>
-
             <label
                 class="nickname-form__label"
                 for="nickname-form-field"
@@ -51,15 +34,15 @@ function handleEntered(player) {
             </label>
             <input
                 id="nickname-form-field"
-                ref="input"
                 v-model="nickname"
                 :class="['nickname-form__field', {'nickname-form__field--error': errorMessage}]"
                 type="text"
                 autocomplete="nickname"
                 :maxlength="NICKNAME_MAX_LENGTH"
-                placeholder="Твоё имя"
+                placeholder="Например, Аня"
                 :aria-invalid="Boolean(errorMessage)"
                 aria-describedby="nickname-form-error"
+                autofocus
                 @input="resetError"
             />
             <p
@@ -76,69 +59,61 @@ function handleEntered(player) {
                 fluid
                 :disabled="isSubmitting"
             >
-                {{ isSubmitting ? 'Секунду…' : 'Поехали!' }}
+                <Play
+                    :size="20"
+                    aria-hidden="true"
+                />
+                {{ isSubmitting ? 'Открываем смену…' : 'Начать смену' }}
             </UiButton>
         </form>
     </UiModal>
 </template>
 
 <style lang="scss">
-$mascot-size: 64px;
-
 .nickname-form {
-    @include column;
+    @include column($indent-step * 2);
 
-    &__mascot {
-        margin-top: -$mascot-size;
-        animation: bob 2.6s ease-in-out infinite;
-        font-size: $mascot-size;
-    }
-
-    &__title {
-        text-align: center;
-        font-size: $font-size-xxl;
-        font-weight: $font-weight-extra-bold;
-    }
-
-    // Подпись нужна скринридерам; визуально её заменяет заголовок
     &__label {
-        position: absolute;
-        overflow: hidden;
-        width: 1px;
-        height: 1px;
-        clip-path: inset(50%);
-        white-space: nowrap;
+        color: $color-ink;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
     }
 
     &__field {
         width: 100%;
-        transition: border-color $duration ease;
-        text-align: center;
-        border: 3px solid $color-border;
-        border-radius: $radius-md;
-        background: $color-white;
+        transition:
+            border-color $duration ease,
+            box-shadow $duration ease;
+        color: $color-ink;
+        border: 2px solid $color-card-text-box;
+        border-radius: $radius-button;
+        background-color: $color-card-text-box;
         font: inherit;
         font-size: $font-size-lg;
 
         @include padding('y', 3);
         @include padding('x', 4);
 
+        &::placeholder {
+            color: $color-ink-soft;
+        }
+
         &:focus {
-            border-color: $color-vet;
+            border-color: $color-accent;
             outline: none;
+            box-shadow: 0 0 0 4px rgba($color-action, 45%);
         }
 
         &--error {
-            border-color: $color-error;
+            border-color: $color-danger;
         }
     }
 
     &__error {
-        min-height: 1.3em;
-        margin-top: -$indent-step;
-        color: $color-error;
+        min-height: 1.5em;
+        color: $color-danger-text;
         font-size: $font-size-sm;
-        font-weight: $font-weight-bold;
+        font-weight: $font-weight-medium;
     }
 }
 </style>

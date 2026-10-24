@@ -1,7 +1,11 @@
 <script setup>
-defineProps({
+import {computed} from 'vue';
+
+const props = defineProps({
     nickname: {type: String, required: true},
 });
+
+const initial = computed(() => props.nickname.trim().charAt(0).toUpperCase());
 </script>
 
 <template>
@@ -10,11 +14,11 @@ defineProps({
         :title="nickname"
     >
         <span
-            class="header-player__icon"
+            class="header-player__avatar"
             aria-hidden="true"
         >
-            🩺
+            {{ initial }}
         </span>
-        {{ nickname }}
+        <span class="header-player__name">{{ nickname }}</span>
     </span>
 </template>

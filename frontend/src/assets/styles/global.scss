@@ -1,7 +1,7 @@
 @import './animations';
 
 :root {
-    color-scheme: light;
+    color-scheme: dark;
 
     @each $name, $color in $professions {
         --profession-#{$name}: #{$color};
@@ -31,16 +31,18 @@ body {
 }
 
 body {
-    color: $color-text-primary;
-    background: $color-sky-bottom;
+    color: $color-on-playmat;
+    background-color: $color-playmat;
     font-family: $font-primary;
     font-size: $font-size-md;
-    line-height: 1.4;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
 }
 
 h1,
 h2,
+h3,
 p {
     margin: 0;
 }
@@ -51,7 +53,16 @@ button {
     font: inherit;
 }
 
+::selection {
+    color: $color-ink;
+    background-color: $color-action;
+}
+
 :focus-visible {
-    outline: 3px solid $color-vet;
+    outline: 3px solid $color-action;
     outline-offset: 3px;
+}
+
+html {
+    scrollbar-color: $color-playmat-light $color-playmat-deep;
 }

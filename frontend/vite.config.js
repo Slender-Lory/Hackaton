@@ -1,5 +1,6 @@
 import {defineConfig, loadEnv} from 'vite';
 import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 import {fileURLToPath, URL} from 'node:url';
 
 // https://vite.dev/config/
@@ -7,7 +8,13 @@ export default defineConfig(({mode}) => {
     const env = loadEnv(mode, '.', '');
 
     return {
-        plugins: [vue()],
+        plugins: [
+            vue({
+                // <model-viewer> — веб-компонент (@google/model-viewer), не Vue-компонент
+                template: {compilerOptions: {isCustomElement: (tag) => tag === 'model-viewer'}},
+            }),
+            tailwindcss(),
+        ],
         resolve: {
             alias: {'@': fileURLToPath(new URL('./src', import.meta.url))},
         },

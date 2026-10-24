@@ -1,6 +1,5 @@
 import {NICKNAME_MAX_LENGTH, NICKNAME_MIN_LENGTH} from '@/core/constants';
 
-// Буквы любого алфавита, цифры, пробел, «_» и «-» — как в EnterForm на backend'е.
 const NICKNAME_PATTERN = /^[\p{L}\p{Nd}_\- ]+$/u;
 
 export const NICKNAME_ERRORS = Object.freeze({
@@ -10,7 +9,6 @@ export const NICKNAME_ERRORS = Object.freeze({
 });
 
 /**
- * Текст ошибки для игрока или null, если никнейм подходит.
  * @param {string} value
  * @returns {string | null}
  */

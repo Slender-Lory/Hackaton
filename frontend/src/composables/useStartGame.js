@@ -6,10 +6,6 @@ import {usePlayerStore} from '@/core/stores/player';
 
 /** @typedef {import('@/core/types/profession').Profession} Profession */
 
-/**
- * «Играть»: вошедшего игрока сразу ведём в игру,
- * остальным сначала спрашиваем имя (pendingProfession ≠ null — показать форму).
- */
 export function useStartGame() {
     const router = useRouter();
     const {isSignedIn} = storeToRefs(usePlayerStore());
@@ -19,7 +15,7 @@ export function useStartGame() {
 
     /** @param {Profession} profession */
     function openGame(profession) {
-        router.push({name: ROUTE_NAMES.game, params: {profession: profession.code}});
+        router.push({name: ROUTE_NAMES.prologue, params: {profession: profession.code}});
     }
 
     /** @param {Profession} profession */
@@ -33,7 +29,6 @@ export function useStartGame() {
         pendingProfession.value = profession;
     }
 
-    // Имя введено — продолжаем начатый старт
     function continueAfterEnter() {
         const profession = pendingProfession.value;
         pendingProfession.value = null;

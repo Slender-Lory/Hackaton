@@ -4,8 +4,8 @@ import {computed} from 'vue';
 const props = defineProps({
     theme: {
         type: String,
-        default: 'primary',
-        validator: (value) => ['primary', 'ghost'].includes(value),
+        default: 'action',
+        validator: (value) => ['action', 'ghost'].includes(value),
     },
     type: {
         type: String,
@@ -14,8 +14,6 @@ const props = defineProps({
     },
     large: {type: Boolean, default: false},
     fluid: {type: Boolean, default: false},
-    // Мягкая пульсация — привлечь внимание к главному действию
-    pulse: {type: Boolean, default: false},
     disabled: {type: Boolean, default: false},
 });
 
@@ -27,7 +25,6 @@ const rootClass = computed(() => [
     {
         'ui-button--large': props.large,
         'ui-button--fluid': props.fluid,
-        'ui-button--pulse': props.pulse,
     },
 ]);
 </script>
@@ -44,62 +41,60 @@ const rootClass = computed(() => [
 </template>
 
 <style lang="scss">
-$button-depth: 5px;
-
 .ui-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     transition:
-        transform $duration-fast ease,
-        background $duration ease,
-        box-shadow $duration-fast ease;
-    border-radius: $radius-pill;
+        transform $duration-fast $ease-out,
+        background-color $duration ease,
+        box-shadow $duration ease;
+    border: none;
+    border-radius: $radius-button;
     font-size: $font-size-md;
-    font-weight: $font-weight-extra-bold;
+    font-weight: $font-weight-bold;
     gap: $indent-step * 2;
 
     @include padding('y', 3);
     @include padding('x', 6);
 
-    &--primary {
-        color: $color-white;
-        border: none;
-        background: $color-accent;
+    &--action {
+        color: $color-ink;
+        background-color: $color-action;
         box-shadow:
-            0 $button-depth 0 accent-shade(),
-            0 10px 22px accent-fade(40%);
+            inset 0 -4px 0 $color-action-deep,
+            $shadow-button;
 
         &:not(:disabled) {
             @include hover {
-                transform: translateY(-2px) scale(1.03);
+                transform: translateY(-2px);
+                background-color: $color-action-light;
             }
 
             &:active {
-                transform: translateY($button-depth - 1px);
-                box-shadow: 0 1px 0 accent-shade();
+                transform: translateY(2px);
+                box-shadow:
+                    inset 0 -1px 0 $color-action-deep,
+                    $shadow-button;
             }
         }
     }
 
     &--ghost {
-        color: $color-text-secondary;
-        border: 2px dashed color-mix(in srgb, #{$color-accent} 60%, #{$color-text-secondary});
-        background: transparent;
-        font-size: $font-size-sm;
-        font-weight: $font-weight-bold;
+        color: $color-on-playmat;
+        border: 2px solid rgba($color-white, 45%);
+        background-color: rgba($color-white, 8%);
 
         &:not(:disabled) {
             @include hover {
-                background: $color-mist;
+                border-color: $color-white;
+                background-color: rgba($color-white, 16%);
             }
         }
     }
 
     &--large {
-        min-width: 220px;
-        letter-spacing: 0.02em;
-        font-size: $font-size-xl;
+        font-size: $font-size-lg;
 
         @include padding('y', 4);
         @include padding('x', 8);
@@ -109,22 +104,9 @@ $button-depth: 5px;
         width: 100%;
     }
 
-    &--pulse {
-        animation: ui-button-pulse 2.2s ease-in-out infinite;
-    }
-
     &:disabled {
         cursor: progress;
-        opacity: 0.7;
-    }
-}
-
-@keyframes ui-button-pulse {
-    50% {
-        box-shadow:
-            0 $button-depth 0 accent-shade(),
-            0 10px 22px accent-fade(40%),
-            0 0 0 ($indent-step * 3) accent-fade(18%);
+        opacity: 0.65;
     }
 }
 </style>

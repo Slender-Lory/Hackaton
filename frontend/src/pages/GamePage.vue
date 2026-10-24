@@ -1,80 +1,129 @@
 <script setup>
-// Точка входа в игру. Здесь будет сама глава — пока экран-заглушка.
 import {computed} from 'vue';
 import {useRoute} from 'vue-router';
+import {ArrowLeft} from 'lucide-vue-next';
 import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
+import {usePlayerStore} from '@/core/stores/player';
+
+import ClinicPlan from '@/components/Clinic/ClinicPlan.vue';
+import ProfessionCard from '@/components/Professions/ProfessionCard.vue';
 
 const route = useRoute();
+const playerStore = usePlayerStore();
 
 const profession = computed(() => professions.find((item) => item.code === route.params.profession));
-const cardStyle = computed(() => ({'--accent': `var(--profession-${profession.value?.code ?? 'vet'})`}));
 </script>
 
 <template>
     <div class="game-page">
-        <div
-            class="game-page__card"
-            :style="cardStyle"
+        <RouterLink
+            class="game-page__back"
+            :to="{name: ROUTE_NAMES.professions}"
         >
-            <div
-                class="game-page__icon"
+            <ArrowLeft
+                :size="18"
                 aria-hidden="true"
-            >
-                {{ profession?.icon ?? '🎮' }}
+            />
+            К колоде
+        </RouterLink>
+
+        <div class="game-page__table">
+            <div class="game-page__main">
+                <div class="game-page__intro">
+                    <h1 class="game-page__title">Смена 1. Первый вызов</h1>
+                    <p class="game-page__lead">
+                        6:40, звонит Пётр Ильич: поросята не встают, у троих слюна. До фермы сорок минут, а в приёмной
+                        уже ждёт Барон.
+                    </p>
+                </div>
+                <ClinicPlan :shift="1" />
+                <p class="game-page__note">Смена в разработке: здесь появятся приём, триаж и выезд на ферму.</p>
             </div>
-            <h1 class="game-page__title">{{ profession?.title ?? 'Игра' }}</h1>
-            <p class="game-page__text">Игра скоро будет здесь</p>
-            <RouterLink
-                class="game-page__back"
-                :to="{name: ROUTE_NAMES.professions}"
-            >
-                ← К профессиям
-            </RouterLink>
+            <ProfessionCard
+                v-if="profession"
+                class="game-page__card"
+                :profession="profession"
+                :percent="playerStore.getPercent(profession.code)"
+                is-patient-sick
+            />
         </div>
     </div>
 </template>
 
 <style lang="scss">
+$card-width: 320px;
+
 .game-page {
-    min-height: 60vh;
+    @include padding('y', 6);
+    @include padding('bottom', 16);
 
-    @include flex-center;
+    &__back {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        color: $color-on-playmat-soft;
+        font-weight: $font-weight-semibold;
+        gap: $indent-step * 2;
 
-    &__card {
-        text-align: center;
-
-        @include surface;
-        @include column($indent-step * 2);
-        @include appear(pop-in);
-        @include padding('y', 8);
-        @include padding('x', 7);
+        @include hover {
+            color: $color-on-playmat;
+        }
     }
 
-    &__icon {
-        font-size: 72px;
+    &__main {
+        min-width: 0;
+
+        @include column($indent-step * 10);
+    }
+
+    &__intro {
+        max-width: 720px;
+
+        @include column($indent-step * 4);
     }
 
     &__title {
-        color: accent-shade();
-        font-size: clamp(28px, 5vw, 36px);
+        @include display(clamp(36px, 6vw, 72px));
+
+        text-wrap: balance;
     }
 
-    &__text {
-        color: $color-text-secondary;
-
-        @include margin('bottom', 3);
+    &__lead {
+        max-width: 60ch;
+        color: $color-on-playmat-soft;
+        font-size: $font-size-lg;
     }
 
-    &__back {
-        text-decoration: none;
-        color: $color-white;
-        border-radius: $radius-pill;
-        background: $color-accent;
-        font-weight: $font-weight-extra-bold;
+    &__table {
+        display: grid;
+        align-items: start;
+        grid-template-columns: minmax(0, 1fr) $card-width;
+        gap: $indent-step * 10;
 
-        @include padding('y', 3);
-        @include padding('x', 6);
+        @include margin('top', 6);
+
+        @include tablet {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__card {
+        position: sticky;
+        top: $indent-step * 6;
+        rotate: 2deg;
+
+        @include tablet {
+            position: static;
+            max-width: $card-width;
+            justify-self: center;
+            rotate: 0deg;
+        }
+    }
+
+    &__note {
+        color: $color-on-playmat-soft;
+        font-size: $font-size-sm;
     }
 }
 </style>

@@ -1,187 +1,173 @@
 <script setup>
-import {computed, ref} from 'vue';
+import {computed} from 'vue';
+import {CalendarDays, Clock, PawPrint} from 'lucide-vue-next';
 
-import UiButton from '@/components/Ui/UiButton.vue';
+import GlareCard from '@/components/Ui/Inspira/GlareCard.vue';
+import PatientModel from '@/components/Patients/PatientModel.vue';
 import UiProgress from '@/components/Ui/UiProgress.vue';
+
+const STAT_ICONS = Object.freeze({calendar: CalendarDays, clock: Clock, paw: PawPrint});
 
 const props = defineProps({
     /** @type {import('vue').PropType<import('@/core/types/profession').Profession>} */
     profession: {type: Object, required: true},
-    // Процент прохождения; null — профессия не начата
     percent: {type: Number, default: null},
-    // Порядковый номер — для поочерёдного появления карточек
-    order: {type: Number, default: 0},
+    isPatientSick: {type: Boolean, default: false},
 });
 
-const emit = defineEmits(['play', 'locked']);
-
-const isShaking = ref(false);
-
-const isStarted = computed(() => props.percent !== null);
-const cardStyle = computed(() => ({
-    '--accent': `var(--profession-${props.profession.code})`,
-    '--order': props.order,
-}));
-
-function handleLockedClick() {
-    isShaking.value = false;
-    // Перезапуск покачивания при повторном клике
-    requestAnimationFrame(() => {
-        isShaking.value = true;
-    });
-    emit('locked');
-}
+const cardStyle = computed(() => ({'--accent': `var(--profession-${props.profession.code})`}));
 </script>
 
 <template>
-    <article
-        :class="[
-            'profession-card',
-            {
-                'profession-card--main': profession.isAvailable,
-                'profession-card--locked': !profession.isAvailable,
-                'profession-card--shaking': isShaking,
-            },
-        ]"
-        :style="cardStyle"
-        @animationend="isShaking = false"
-    >
-        <div
-            class="profession-card__icon"
-            aria-hidden="true"
+    <GlareCard class="profession-card-holder">
+        <article
+            class="profession-card"
+            :style="cardStyle"
         >
-            <span class="profession-card__emoji">{{ profession.icon }}</span>
-        </div>
+            <header class="profession-card__head">
+                <h2 class="profession-card__title">{{ profession.title }}</h2>
+                <PawPrint
+                    class="profession-card__emblem"
+                    :size="22"
+                    aria-hidden="true"
+                />
+            </header>
 
-        <div class="profession-card__body">
-            <h2 class="profession-card__title">{{ profession.title }}</h2>
+            <div
+                v-if="profession.patient"
+                class="profession-card__art"
+            >
+                <PatientModel
+                    :src="profession.patient.model"
+                    :alt="`Пациент ${profession.patient.name}`"
+                    :is-sick="isPatientSick"
+                />
+                <span class="profession-card__patient">{{ profession.patient.name }}</span>
+            </div>
+
+            <p class="profession-card__kind">{{ profession.kind }}</p>
+
+            <ul class="profession-card__stats">
+                <li
+                    v-for="stat in profession.stats"
+                    :key="stat.label"
+                    class="profession-card__stat"
+                >
+                    <component
+                        :is="STAT_ICONS[stat.icon]"
+                        class="profession-card__stat-icon"
+                        :size="16"
+                        aria-hidden="true"
+                    />
+                    <span class="profession-card__stat-label">{{ stat.label }}</span>
+                    <span class="profession-card__stat-value">{{ stat.value }}</span>
+                </li>
+            </ul>
+
             <p class="profession-card__tagline">{{ profession.tagline }}</p>
+
             <UiProgress
-                v-if="profession.isAvailable && isStarted"
-                class="profession-card__progress"
+                v-if="percent !== null"
                 :value="percent"
             />
-        </div>
-
-        <UiButton
-            v-if="profession.isAvailable"
-            large
-            pulse
-            @click="emit('play')"
-        >
-            <span aria-hidden="true">▶</span>
-            {{ isStarted ? 'Продолжить' : 'Играть' }}
-        </UiButton>
-        <UiButton
-            v-else
-            theme="ghost"
-            :aria-label="`${profession.title}: скоро`"
-            @click="handleLockedClick"
-        >
-            <span aria-hidden="true">🔒</span>
-            Скоро
-        </UiButton>
-    </article>
+        </article>
+    </GlareCard>
 </template>
 
 <style lang="scss">
-$icon-size: 84px;
-$icon-size-main: 120px;
+.profession-card-holder {
+    border-radius: $radius-card;
+}
 
 .profession-card {
-    $block: &;
+    color: $color-ink;
 
-    text-align: center;
-    transition:
-        transform $duration $ease-back-out,
-        box-shadow $duration ease;
-
-    @include surface;
-    @include column;
-    @include appear(pop-in, 0.55s, var(--order));
-    @include padding('y', 5);
+    @include card-face;
+    @include column($indent-step * 3);
+    @include padding('y', 4);
     @include padding('x', 4);
 
-    @include hover {
-        transform: translateY(-6px);
-        box-shadow: $shadow-lg;
-    }
-
-    &__icon {
-        width: $icon-size;
-        border-radius: 50%;
-        background: accent-tint(22%);
-        font-size: 44px;
-        line-height: 1;
-        aspect-ratio: 1;
-
-        @include flex-center;
-    }
-
-    &__emoji {
-        animation: bob 3s ease-in-out infinite;
-        animation-delay: calc(var(--order) * -0.6s);
-    }
-
-    &__body {
+    &__head {
         display: flex;
-        flex-direction: column;
-        width: 100%;
-        gap: $indent-step;
+        align-items: center;
+        justify-content: space-between;
+        gap: $indent-step * 2;
     }
 
     &__title {
-        font-size: $font-size-xl;
-        font-weight: $font-weight-extra-bold;
+        @include display(clamp(24px, 2.6vw, 32px));
+    }
+
+    &__emblem {
+        flex-shrink: 0;
+        color: $color-accent;
+    }
+
+    &__art {
+        position: relative;
+        overflow: hidden;
+        border: 3px solid $color-accent;
+        border-radius: $radius-card-inner;
+        background-color: $color-card-text-box;
+    }
+
+    &__patient {
+        position: absolute;
+        bottom: $indent-step * 2;
+        left: $indent-step * 2;
+        pointer-events: none;
+
+        @include chip($color-white, $color-ink);
+    }
+
+    &__kind {
+        color: $color-ink-soft;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-semibold;
+    }
+
+    &__stats {
+        display: grid;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: $indent-step * 2;
+    }
+
+    &__stat {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border-radius: $radius-card-inner;
+        background-color: $color-card-text-box;
+        gap: 2px;
+
+        @include padding('y', 2);
+        @include padding('x', 2);
+    }
+
+    &__stat-icon {
+        color: $color-accent;
+    }
+
+    &__stat-label {
+        color: $color-ink-soft;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    &__stat-value {
+        font-size: $font-size-xs;
+        font-weight: $font-weight-bold;
+        line-height: 1.3;
     }
 
     &__tagline {
-        color: $color-text-secondary;
+        margin-top: auto;
+        color: $color-ink-soft;
         font-size: $font-size-sm;
-    }
-
-    &__progress {
-        @include margin('top', 2);
-    }
-
-    &--main {
-        border: 3px solid accent-tint(45%);
-        background: radial-gradient(circle at 20% 0%, accent-tint(16%), transparent 60%), $color-surface;
-
-        @include padding('y', 7);
-        @include padding('x', 6);
-
-        #{$block}__icon {
-            width: $icon-size-main;
-            box-shadow: 0 0 0 10px accent-fade(10%);
-            font-size: 64px;
-        }
-
-        #{$block}__title {
-            color: accent-shade();
-            font-size: clamp(28px, 5vw, 36px);
-        }
-
-        #{$block}__tagline {
-            font-size: $font-size-lg;
-        }
-    }
-
-    &--locked {
-        background: $color-surface-muted;
-
-        #{$block}__icon {
-            filter: saturate(0.55);
-        }
-
-        #{$block}__title,
-        #{$block}__tagline {
-            opacity: 0.75;
-        }
-    }
-
-    &--shaking {
-        animation: shake 0.45s ease both;
+        line-height: 1.4;
     }
 }
 </style>

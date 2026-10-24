@@ -7,7 +7,6 @@ import {safeStorage} from '@/core/helpers/safeStorage';
 /** @typedef {import('@/core/types/player').Player} Player */
 /** @typedef {import('@/core/types/player').Progress} Progress */
 
-// Общий с тестовым меню backend'а (/test/): один вход на оба экрана.
 const TOKEN_STORAGE_KEY = 'hackat.token';
 const UNAUTHORIZED_STATUS = 401;
 
@@ -19,7 +18,6 @@ export const usePlayerStore = defineStore('player', () => {
 
     const isSignedIn = computed(() => player.value !== null);
 
-    /** Подтянуть профиль по сохранённому токену. Без сервера экран работает, вход спросим при старте игры. */
     async function loadProfile() {
         const token = safeStorage.get(TOKEN_STORAGE_KEY);
 
@@ -56,7 +54,6 @@ export const usePlayerStore = defineStore('player', () => {
     }
 
     /**
-     * Процент прохождения или null, если профессия не начата.
      * @param {string} professionCode
      * @returns {number | null}
      */

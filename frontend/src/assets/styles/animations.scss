@@ -1,51 +1,22 @@
-// Общие анимации: используются в нескольких компонентах.
-
 @keyframes fade-in {
     from {
         opacity: 0;
     }
 }
 
-// Появление снизу с уменьшением — карточки
-@keyframes pop-in {
+@keyframes card-deal {
     from {
-        transform: translateY(24px) scale(0.92);
+        transform: translateY(40px) rotate(var(--deal-from, -10deg)) scale(0.92);
         opacity: 0;
     }
 }
 
-// Появление снизу — модалки
-@keyframes rise-in {
-    from {
-        transform: translateY(30px) scale(0.95);
-        opacity: 0;
+@keyframes card-hop {
+    30% {
+        transform: translateY(-18px) rotate(-3deg);
     }
-}
 
-// Падение сверху — заголовки
-@keyframes drop-in {
-    from {
-        transform: translateY(-20px) scale(0.9);
-        opacity: 0;
-    }
-}
-
-// Покачивание иконок и маскота на месте
-@keyframes bob {
-    50% {
-        transform: translateY(-6px) rotate(-4deg);
-    }
-}
-
-// «Нельзя»: тряска по горизонтали
-@keyframes shake {
-    20%,
     60% {
-        transform: translateX(-8px) rotate(-1.5deg);
-    }
-
-    40%,
-    80% {
-        transform: translateX(8px) rotate(1.5deg);
+        transform: translateY(0) rotate(2deg);
     }
 }

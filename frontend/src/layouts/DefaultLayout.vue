@@ -2,7 +2,7 @@
 import {onMounted} from 'vue';
 import {usePlayerStore} from '@/core/stores/player';
 
-import SteppeBackdrop from '@/components/SteppeBackdrop.vue';
+import PlaymatBackdrop from '@/components/PlaymatBackdrop.vue';
 import TheHeader from '@/components/Header/TheHeader.vue';
 
 const playerStore = usePlayerStore();
@@ -12,7 +12,7 @@ onMounted(playerStore.loadProfile);
 
 <template>
     <div class="layout">
-        <SteppeBackdrop />
+        <PlaymatBackdrop />
         <TheHeader />
         <main class="layout__main">
             <slot />

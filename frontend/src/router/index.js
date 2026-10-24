@@ -5,10 +5,17 @@ import ProfessionsPage from '@/pages/ProfessionsPage.vue';
 
 export const router = createRouter({
     history: createWebHistory(),
+    scrollBehavior(to, from, savedPosition) {
+        return savedPosition ?? {top: 0};
+    },
     routes: [
-        // Главной страницы пока нет — сразу к выбору профессии
         {path: '/', redirect: {name: ROUTE_NAMES.professions}},
         {path: '/professions', name: ROUTE_NAMES.professions, component: ProfessionsPage},
+        {
+            path: '/game/:profession/prologue',
+            name: ROUTE_NAMES.prologue,
+            component: () => import('@/pages/ProloguePage.vue'),
+        },
         {path: '/game/:profession', name: ROUTE_NAMES.game, component: () => import('@/pages/GamePage.vue')},
         {path: '/:pathMatch(.*)*', redirect: {name: ROUTE_NAMES.professions}},
     ],

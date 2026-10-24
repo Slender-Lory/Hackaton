@@ -1,10 +1,11 @@
 <script setup>
 import {onBeforeUnmount} from 'vue';
+import {Clock} from 'lucide-vue-next';
 
 const props = defineProps({
     id: {type: Number, required: true},
     message: {type: String, required: true},
-    timeout: {type: Number, default: 1800},
+    timeout: {type: Number, default: 2200},
 });
 
 const emit = defineEmits(['close']);
@@ -19,6 +20,11 @@ onBeforeUnmount(() => clearTimeout(timer));
         class="toast"
         role="status"
     >
+        <Clock
+            class="toast__icon"
+            :size="18"
+            aria-hidden="true"
+        />
         {{ message }}
     </p>
 </template>

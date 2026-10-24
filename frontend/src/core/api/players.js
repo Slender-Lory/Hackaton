@@ -3,7 +3,6 @@ import {http} from '@/core/api/client';
 /** @typedef {import('@/core/types/player').AuthResult} AuthResult */
 /** @typedef {import('@/core/types/player').PlayerProfile} PlayerProfile */
 
-// Прокси снимает префикс /api из API_BASE, а маршруты backend'а сами начинаются с /api/v1.
 const ENTER_PATH = '/api/v1/players/enter';
 const PROFILE_PATH = '/api/v1/players/me';
 
@@ -16,7 +15,6 @@ function getAuthHeaders(token) {
 }
 
 /**
- * Вход гостя по никнейму.
  * @param {string} nickname
  * @returns {Promise<AuthResult>}
  */
@@ -27,7 +25,6 @@ export async function enterPlayer(nickname) {
 }
 
 /**
- * Профиль игрока с прогрессом по всем профессиям.
  * @param {string} token
  * @returns {Promise<PlayerProfile>}
  */

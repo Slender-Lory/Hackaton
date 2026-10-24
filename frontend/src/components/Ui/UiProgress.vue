@@ -1,5 +1,4 @@
 <script setup>
-// Полоска прогресса 0–100 с подписью внутри. Цвет — из --accent родителя.
 defineProps({
     value: {type: Number, required: true},
 });
@@ -14,38 +13,42 @@ defineProps({
         aria-valuemax="100"
         :aria-label="`Пройдено ${value}%`"
     >
-        <div
-            class="ui-progress__fill"
-            :style="{width: `${value}%`}"
-        />
-        <span class="ui-progress__label">{{ value }}%</span>
+        <span class="ui-progress__track">
+            <span
+                class="ui-progress__fill"
+                :style="{width: `${value}%`}"
+            />
+        </span>
+        <span class="ui-progress__value">{{ value }}%</span>
     </div>
 </template>
 
 <style lang="scss">
 .ui-progress {
-    position: relative;
-    overflow: hidden;
-    width: min(280px, 100%);
-    height: 22px;
-    margin: 0 auto;
-    border-radius: $radius-pill;
-    background: accent-tint(14%);
+    display: flex;
+    align-items: center;
+    gap: $indent-step * 2;
 
-    &__fill {
-        height: 100%;
-        transition: width $duration-slow ease;
-        border-radius: inherit;
-        background: $color-accent;
+    &__track {
+        overflow: hidden;
+        flex: 1;
+        height: 8px;
+        border-radius: $radius-chip;
+        background-color: $color-card-text-box;
     }
 
-    &__label {
-        position: absolute;
-        inset: 0;
-        font-size: $font-size-xs;
-        font-weight: $font-weight-extra-bold;
+    &__fill {
+        display: block;
+        height: 100%;
+        transition: width $duration-slow $ease-out;
+        border-radius: inherit;
+        background-color: $color-accent;
+    }
 
-        @include flex-center;
+    &__value {
+        color: $color-ink;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-bold;
     }
 }
 </style>
