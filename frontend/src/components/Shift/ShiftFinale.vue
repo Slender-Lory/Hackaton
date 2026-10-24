@@ -1,6 +1,6 @@
 <script setup>
 import {computed} from 'vue';
-import {Layers} from 'lucide-vue-next';
+import {Layers, Play, RotateCcw} from 'lucide-vue-next';
 import {COUNTER_LABELS} from '@/core/data/shifts';
 import {formatRubles} from '@/core/utils/format';
 
@@ -11,10 +11,16 @@ const props = defineProps({
     shift: {type: Object, required: true},
     /** @type {import('vue').PropType<import('@/core/types/shift').Counters>} */
     counters: {type: Object, required: true},
+    /** @type {import('vue').PropType<import('@/core/types/shift').Shift | null>} */
+    nextShift: {type: Object, default: null},
+    /** @type {import('vue').PropType<import('@/core/types/shift').ChapterEnding | null>} */
+    ending: {type: Object, default: null},
 });
 
-const emit = defineEmits(['leave']);
+const emit = defineEmits(['next', 'restart', 'leave']);
 
+const title = computed(() => props.ending?.title ?? props.shift.finale.title);
+const text = computed(() => props.ending?.text ?? props.shift.finale.text);
 const results = computed(() => [
     {code: 'revenue', label: COUNTER_LABELS.revenue, value: formatRubles(props.counters.revenue)},
     {code: 'reputation', label: COUNTER_LABELS.reputation, value: `${props.counters.reputation} из 100`},
@@ -24,16 +30,16 @@ const results = computed(() => [
 
 <template>
     <article
-        class="shift-finale"
+        :class="['shift-finale', {'shift-finale--chapter': ending}]"
         aria-labelledby="shift-finale-title"
     >
         <h2
             id="shift-finale-title"
             class="shift-finale__title"
         >
-            {{ shift.finale.title }}
+            {{ title }}
         </h2>
-        <p class="shift-finale__text">{{ shift.finale.text }}</p>
+        <p class="shift-finale__text">{{ text }}</p>
 
         <dl class="shift-finale__results">
             <div
@@ -46,15 +52,45 @@ const results = computed(() => [
             </div>
         </dl>
 
-        <p class="shift-finale__next">Смена {{ shift.number + 1 }} пока в разработке: с этими итогами ты её начнёшь.</p>
+        <p
+            v-if="nextShift"
+            class="shift-finale__next"
+        >
+            С этими итогами начнётся смена {{ nextShift.number }}: «{{ nextShift.title }}».
+        </p>
 
-        <UiButton @click="emit('leave')">
-            <Layers
-                :size="20"
-                aria-hidden="true"
-            />
-            Вернуться к колоде
-        </UiButton>
+        <div class="shift-finale__actions">
+            <UiButton
+                v-if="nextShift"
+                @click="emit('next')"
+            >
+                <Play
+                    :size="20"
+                    aria-hidden="true"
+                />
+                Начать смену {{ nextShift.number }}
+            </UiButton>
+            <UiButton
+                v-else
+                @click="emit('restart')"
+            >
+                <RotateCcw
+                    :size="20"
+                    aria-hidden="true"
+                />
+                Пройти главу заново
+            </UiButton>
+            <UiButton
+                theme="quiet"
+                @click="emit('leave')"
+            >
+                <Layers
+                    :size="20"
+                    aria-hidden="true"
+                />
+                Вернуться к колоде
+            </UiButton>
+        </div>
     </article>
 </template>
 
@@ -71,6 +107,10 @@ const results = computed(() => [
     @include mobile {
         @include padding('y', 5);
         @include padding('x', 4);
+    }
+
+    &--chapter {
+        border-color: $color-action;
     }
 
     &__title {
@@ -117,6 +157,12 @@ const results = computed(() => [
     &__next {
         color: $color-ink-soft;
         font-size: $font-size-sm;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $indent-step * 3;
     }
 }
 </style>

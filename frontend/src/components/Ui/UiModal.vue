@@ -13,6 +13,7 @@ import {X} from 'lucide-vue-next';
 defineProps({
     title: {type: String, required: true},
     description: {type: String, default: ''},
+    wide: {type: Boolean, default: false},
 });
 
 const emit = defineEmits(['close']);
@@ -32,7 +33,7 @@ function handleOpenChange(isOpen) {
     >
         <DialogPortal>
             <DialogOverlay class="ui-modal" />
-            <DialogContent class="ui-modal__window">
+            <DialogContent :class="['ui-modal__window', {'ui-modal__window--wide': wide}]">
                 <DialogTitle class="ui-modal__title">{{ title }}</DialogTitle>
                 <DialogDescription
                     v-if="description"
@@ -68,7 +69,9 @@ $close-size: 40px;
         z-index: $ui-index-4;
         top: 50%;
         left: 50%;
+        overflow-y: auto;
         width: min(420px, calc(100% - #{$page-gutter * 2}));
+        max-height: calc(100dvh - #{$page-gutter * 2});
         transform: translate(-50%, -50%);
         animation: ui-modal-deal $duration-slow $ease-out both;
         color: $color-ink;
@@ -77,6 +80,10 @@ $close-size: 40px;
         @include column($indent-step * 4);
         @include padding('y', 7);
         @include padding('x', 6);
+
+        &--wide {
+            width: min(640px, calc(100% - #{$page-gutter * 2}));
+        }
     }
 
     &__title {

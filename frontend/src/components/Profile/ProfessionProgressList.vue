@@ -1,9 +1,11 @@
 <script setup>
-import {Lock} from 'lucide-vue-next';
+import {Lock, RotateCcw} from 'lucide-vue-next';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
 
 import UiProgress from '@/components/Ui/UiProgress.vue';
+
+const emit = defineEmits(['reset']);
 
 const playerStore = usePlayerStore();
 </script>
@@ -45,6 +47,18 @@ const playerStore = usePlayerStore();
                 v-if="profession.isAvailable"
                 :value="playerStore.getPercent(profession.code) ?? 0"
             />
+            <button
+                v-if="profession.isAvailable && playerStore.getProgressSummary(profession.code)"
+                class="profession-progress__reset"
+                type="button"
+                @click="emit('reset', profession)"
+            >
+                <RotateCcw
+                    :size="14"
+                    aria-hidden="true"
+                />
+                Начать заново
+            </button>
         </li>
     </ul>
 </template>
@@ -90,6 +104,23 @@ const playerStore = usePlayerStore();
 
     &__badge {
         @include chip;
+    }
+
+    &__reset {
+        display: inline-flex;
+        align-items: center;
+        align-self: flex-start;
+        cursor: pointer;
+        color: $color-ink-soft;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-semibold;
+        gap: $indent-step;
+
+        @include button-reset;
+
+        @include hover {
+            color: $color-danger-text;
+        }
     }
 }
 </style>

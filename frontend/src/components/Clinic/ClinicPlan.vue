@@ -1,6 +1,6 @@
 <script setup>
 import {computed} from 'vue';
-import {Check, Lock, PawPrint} from 'lucide-vue-next';
+import {Check, Hourglass, Lock, PawPrint} from 'lucide-vue-next';
 import {clinicRooms} from '@/core/data/clinic';
 import {useToastStore} from '@/core/stores/toast';
 
@@ -8,10 +8,11 @@ import {useToastStore} from '@/core/stores/toast';
 /** @typedef {import('@/core/types/shift').ShiftActivity} ShiftActivity */
 
 const props = defineProps({
-    shift: {type: Number, default: 1},
+    /** @type {import('vue').PropType<string[]>} */
+    openRoomCodes: {type: Array, default: () => []},
     /** @type {import('vue').PropType<ShiftActivity[]>} */
     activities: {type: Array, default: () => []},
-    /** @type {import('vue').PropType<Record<string, 'new' | 'started' | 'done'>>} */
+    /** @type {import('vue').PropType<Record<string, 'new' | 'started' | 'done' | 'locked'>>} */
     statuses: {type: Object, default: () => ({})},
 });
 
@@ -26,7 +27,7 @@ const rooms = computed(() =>
         return {
             ...room,
             activity,
-            isOpen: room.unlockShift <= props.shift,
+            isOpen: props.openRoomCodes.includes(room.code),
             status: activity ? (props.statuses[activity.code] ?? 'new') : null,
         };
     }),
@@ -35,7 +36,7 @@ const rooms = computed(() =>
 /** @param {(typeof rooms.value)[number]} room */
 function handleRoomClick(room) {
     if (!room.isOpen) {
-        toastStore.show(`${room.title} откроется на смене ${room.unlockShift}`);
+        toastStore.show(room.lockedText ?? `${room.title} пока закрыта`);
 
         return;
     }
@@ -48,6 +49,12 @@ function handleRoomClick(room) {
 
     if (room.status === 'done') {
         toastStore.show(`${room.title}: на сегодня всё сделано`);
+
+        return;
+    }
+
+    if (room.status === 'locked') {
+        toastStore.show(room.activity.lockedText ?? `${room.activity.patient.name} пока ждёт`);
 
         return;
     }
@@ -81,7 +88,7 @@ function handleRoomClick(room) {
                     :size="14"
                     aria-hidden="true"
                 />
-                Смена {{ room.unlockShift }}
+                {{ room.lockedLabel ?? 'Закрыто' }}
             </span>
             <span
                 v-else-if="room.status === 'done'"
@@ -98,6 +105,16 @@ function handleRoomClick(room) {
                 class="clinic-plan__room-call"
             >
                 Продолжить
+            </span>
+            <span
+                v-else-if="room.status === 'locked'"
+                class="clinic-plan__room-status"
+            >
+                <Hourglass
+                    :size="14"
+                    aria-hidden="true"
+                />
+                {{ room.activity.patient.name }} ждёт
             </span>
             <span
                 v-else-if="room.activity"

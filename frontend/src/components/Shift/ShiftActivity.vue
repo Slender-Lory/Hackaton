@@ -1,34 +1,47 @@
 <script setup>
 import {computed, ref, watch} from 'vue';
-import {ArrowLeft, ArrowRight, Lightbulb, LogOut} from 'lucide-vue-next';
+import {ArrowLeft, ArrowRight, IdCard, Lightbulb, LogOut} from 'lucide-vue-next';
 import {STORY_ANSWER} from '@/core/constants';
-import {getOpenStepIndex, getStepResult} from '@/core/utils/shift';
+import {getHint, getLockedOptions, getOpenStepIndex, getStepResult, getStoryVariant} from '@/core/utils/shift';
 
 import ShiftChecklist from '@/components/Shift/ShiftChecklist.vue';
 import ShiftChoice from '@/components/Shift/ShiftChoice.vue';
 import ShiftEffects from '@/components/Shift/ShiftEffects.vue';
+import ShiftExam from '@/components/Shift/ShiftExam.vue';
 import UiButton from '@/components/Ui/UiButton.vue';
 
 const props = defineProps({
     /** @type {import('vue').PropType<import('@/core/types/shift').ShiftActivity>} */
     activity: {type: Object, required: true},
-    /** @type {import('vue').PropType<import('@/core/types/shift').ActivityAnswers>} */
-    answers: {type: Object, required: true},
-    revenue: {type: Number, required: true},
+    /** @type {import('vue').PropType<import('@/core/types/shift').ShiftState>} */
+    state: {type: Object, required: true},
 });
 
-const emit = defineEmits(['answer', 'close']);
+const emit = defineEmits(['answer', 'close', 'passport']);
 
-const stepIndex = ref(getOpenStepIndex(props.activity.steps, props.answers));
+const stepIndex = ref(getOpenStepIndex(props.activity.steps, props.state.answers[props.activity.code] ?? {}));
 const isHintShown = ref(false);
 
+const answers = computed(() => props.state.answers[props.activity.code] ?? {});
+const revenue = computed(() => props.state.counters.revenue);
 const step = computed(() => props.activity.steps[stepIndex.value]);
-const answer = computed(() => props.answers[step.value.id] ?? null);
+const answer = computed(() => answers.value[step.value.id] ?? null);
 const isAnswered = computed(() => answer.value !== null);
 const isStory = computed(() => step.value.kind === 'story');
 const isLastStep = computed(() => stepIndex.value === props.activity.steps.length - 1);
 const isNextShown = computed(() => isStory.value || isAnswered.value);
 const result = computed(() => (isAnswered.value && !isStory.value ? getStepResult(step.value, answer.value) : null));
+const hasResult = computed(() => Boolean(result.value?.feedback || Object.keys(result.value?.effects ?? {}).length));
+const hint = computed(() => (isStory.value ? null : getHint(step.value.hints, props.state.difficulty)));
+const variant = computed(() => (isStory.value ? getStoryVariant(step.value, props.state, answer.value) : null));
+const view = computed(() => ({
+    title: variant.value?.title ?? step.value.title,
+    text: variant.value?.text ?? step.value.text,
+    effects: variant.value ? variant.value.effects : step.value.effects,
+}));
+const lockedOptions = computed(() =>
+    step.value.kind === 'choice' && !isAnswered.value ? getLockedOptions(step.value.options, props.state) : {},
+);
 
 watch(stepIndex, () => {
     isHintShown.value = false;
@@ -41,7 +54,7 @@ function handleAnswer(value) {
 
 function handleNext() {
     if (isStory.value && !isAnswered.value) {
-        handleAnswer(STORY_ANSWER);
+        handleAnswer(variant.value?.id ?? STORY_ANSWER);
     }
 
     if (isLastStep.value) {
@@ -64,17 +77,30 @@ function handleHintToggle() {
         aria-labelledby="shift-activity-title"
     >
         <header class="shift-activity__head">
-            <button
-                class="shift-activity__back"
-                type="button"
-                @click="emit('close')"
-            >
-                <ArrowLeft
-                    :size="18"
-                    aria-hidden="true"
-                />
-                К плану клиники
-            </button>
+            <div class="shift-activity__nav">
+                <button
+                    class="shift-activity__back"
+                    type="button"
+                    @click="emit('close')"
+                >
+                    <ArrowLeft
+                        :size="18"
+                        aria-hidden="true"
+                    />
+                    К плану клиники
+                </button>
+                <button
+                    class="shift-activity__passport"
+                    type="button"
+                    @click="emit('passport')"
+                >
+                    <IdCard
+                        :size="18"
+                        aria-hidden="true"
+                    />
+                    Паспорт: {{ activity.patient.name }}
+                </button>
+            </div>
             <h1
                 id="shift-activity-title"
                 class="shift-activity__title"
@@ -105,11 +131,11 @@ function handleHintToggle() {
                 :key="step.id"
                 class="shift-activity__step"
             >
-                <h2 class="shift-activity__step-title">{{ step.title }}</h2>
-                <p class="shift-activity__text">{{ step.text }}</p>
+                <h2 class="shift-activity__step-title">{{ view.title }}</h2>
+                <p class="shift-activity__text">{{ view.text }}</p>
 
                 <div
-                    v-if="!isStory && !isAnswered"
+                    v-if="hint && !isAnswered"
                     class="shift-activity__hint"
                 >
                     <button
@@ -128,7 +154,7 @@ function handleHintToggle() {
                         v-if="isHintShown"
                         class="shift-activity__hint-text"
                     >
-                        {{ step.hint }}
+                        {{ hint }}
                     </p>
                 </div>
 
@@ -137,6 +163,13 @@ function handleHintToggle() {
                     :step="step"
                     :answer="answer"
                     :revenue="revenue"
+                    :locked-options="lockedOptions"
+                    @answer="handleAnswer"
+                />
+                <ShiftExam
+                    v-else-if="step.kind === 'exam'"
+                    :step="step"
+                    :answer="answer"
                     @answer="handleAnswer"
                 />
                 <ShiftChecklist
@@ -147,16 +180,16 @@ function handleHintToggle() {
                     @answer="handleAnswer"
                 />
                 <ShiftEffects
-                    v-else-if="step.effects"
-                    :effects="step.effects"
+                    v-else-if="view.effects"
+                    :effects="view.effects"
                 />
 
                 <div
-                    v-if="result"
+                    v-if="hasResult"
                     class="shift-activity__feedback"
                     aria-live="polite"
                 >
-                    <p>{{ result.feedback }}</p>
+                    <p v-if="result.feedback">{{ result.feedback }}</p>
                     <ShiftEffects :effects="result.effects" />
                 </div>
 
@@ -198,6 +231,33 @@ function handleHintToggle() {
         @include column($indent-step * 2);
     }
 
+    &__nav {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        width: 100%;
+        gap: $indent-step * 3;
+
+        @include margin('bottom', 2);
+    }
+
+    &__passport {
+        cursor: pointer;
+
+        @include button-reset;
+        @include chip($color-action);
+
+        font-size: $font-size-sm;
+
+        @include padding('y', 2);
+        @include padding('x', 4);
+
+        @include hover {
+            background-color: $color-action-light;
+        }
+    }
+
     &__back {
         display: inline-flex;
         align-items: center;
@@ -208,7 +268,6 @@ function handleHintToggle() {
         gap: $indent-step * 2;
 
         @include button-reset;
-        @include margin('bottom', 2);
 
         @include hover {
             color: $color-on-playmat;

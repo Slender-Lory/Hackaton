@@ -2,10 +2,17 @@ import {describe, expect, it} from 'vitest';
 import {
     applyEffects,
     getChapterPercent,
+    getAvailableExamOptions,
     getChecklistBudget,
+    getHint,
+    getLockedOptions,
     getOpenStepIndex,
+    getPatientChart,
     getStepResult,
+    getStoryVariant,
     getUnaffordableOptionIds,
+    meetsConditions,
+    startShift,
 } from './shift';
 
 /** @type {import('@/core/types/shift').ChecklistStep} */
@@ -113,5 +120,163 @@ describe('getChapterPercent', () => {
     it('считает долю главы по сменам и делам', () => {
         expect(getChapterPercent({shiftNumber: 1, completedCount: 1, activityCount: 2, shiftCount: 3})).toBe(17);
         expect(getChapterPercent({shiftNumber: 2, completedCount: 0, activityCount: 2, shiftCount: 3})).toBe(33);
+    });
+});
+
+/** @type {import('@/core/types/shift').ShiftState} */
+const STATE = {
+    version: 1,
+    shift: 1,
+    counters: {revenue: 1000, reputation: 40, pigHealth: 65},
+    completedActivities: [],
+    answers: {farm: {treatment: 'quarantine', exam: ['mouth', 'hooves']}},
+    morning: {},
+};
+
+describe('meetsConditions', () => {
+    it('проверяет счётчик в границах включительно', () => {
+        expect(meetsConditions([{counter: 'pigHealth', min: 65, max: 70}], STATE)).toBe(true);
+        expect(meetsConditions([{counter: 'reputation', min: 50}], STATE)).toBe(false);
+    });
+
+    it('проверяет ответ, в том числе выбранную процедуру', () => {
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'treatment', is: ['quarantine']}}], STATE)).toBe(
+            true,
+        );
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'exam', is: ['hooves']}}], STATE)).toBe(true);
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'diagnosis', is: ['fmd']}}], STATE)).toBe(false);
+    });
+
+    it('без условий — выполнено', () => {
+        expect(meetsConditions(undefined, STATE)).toBe(true);
+    });
+});
+
+describe('getStoryVariant', () => {
+    const step = {
+        kind: 'story',
+        id: 'outcome',
+        title: '',
+        text: '',
+        variants: [
+            {id: 'saved', when: [{counter: 'pigHealth', min: 70}], title: '', text: '', effects: {reputation: 20}},
+            {id: 'lost', title: '', text: '', effects: {reputation: -20}},
+        ],
+    };
+
+    it('до ответа выбирает подходящий вариант', () => {
+        expect(getStoryVariant(step, STATE, null)?.id).toBe('lost');
+    });
+
+    it('после ответа держится за показанный вариант и его эффект', () => {
+        expect(getStoryVariant(step, STATE, 'saved')?.id).toBe('saved');
+        expect(getStepResult(step, 'saved').effects).toEqual({reputation: 20});
+    });
+});
+
+describe('getLockedOptions', () => {
+    it('закрывает варианты без нужной репутации и объясняет почему', () => {
+        const options = [
+            {id: 'persuade', requires: [{counter: 'reputation', min: 50}], lockedText: 'Не доверяет', effects: {}},
+            {id: 'skip', effects: {}},
+        ];
+
+        expect(getLockedOptions(options, STATE)).toEqual({persuade: 'Не доверяет'});
+    });
+});
+
+describe('startShift', () => {
+    it('применяет подходящие утренние события и запоминает их', () => {
+        const shift = {
+            number: 2,
+            morning: [
+                {id: 'always', text: '', effects: {pigHealth: -10}},
+                {id: 'popular', when: [{counter: 'reputation', min: 55}], text: '', effects: {revenue: 1000}},
+                {
+                    id: 'quarantine',
+                    when: [{answer: {activity: 'farm', step: 'treatment', is: ['quarantine']}}],
+                    text: '',
+                },
+            ],
+            activities: [],
+        };
+
+        const next = startShift(STATE, shift);
+
+        expect(next.shift).toBe(2);
+        expect(next.counters).toEqual({revenue: 1000, reputation: 40, pigHealth: 55});
+        expect(next.morning).toEqual({2: ['always', 'quarantine']});
+    });
+});
+
+describe('условие «на шаг ответили»', () => {
+    it('выполнено при любом ответе и не выполнено без ответа', () => {
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'exam'}}], STATE)).toBe(true);
+        expect(meetsConditions([{answer: {activity: 'farm', step: 'diagnosis'}}], STATE)).toBe(false);
+    });
+});
+
+describe('getHint', () => {
+    const hints = {easy: 'подробно', normal: 'намёк'};
+
+    it('подробная на лёгкой, намёк на обычной, ничего на сложной', () => {
+        expect(getHint(hints, 'Easy')).toBe('подробно');
+        expect(getHint(hints, 'Normal')).toBe('намёк');
+        expect(getHint(hints, 'Hard')).toBeNull();
+    });
+
+    it('без выбранной сложности — как на обычной', () => {
+        expect(getHint(hints, null)).toBe('намёк');
+    });
+});
+
+/** @type {import('@/core/types/shift').ExamStep} */
+const EXAM = {
+    kind: 'exam',
+    id: 'exam',
+    title: 'Осмотр',
+    text: '',
+    hints: {easy: '', normal: ''},
+    options: [
+        {id: 'ears', label: 'Уши', finding: 'Уши горячие'},
+        {
+            id: 'temperature',
+            label: 'Температура',
+            after: ['ears'],
+            finding: 'Жар',
+            reveals: [{vital: 'temperature', value: '39,9 °C', isAbnormal: true}],
+            effects: {revenue: -100},
+        },
+    ],
+};
+
+describe('getAvailableExamOptions', () => {
+    it('открывает следующее действие только после нужной находки', () => {
+        expect(getAvailableExamOptions(EXAM, []).map((option) => option.id)).toEqual(['ears']);
+        expect(getAvailableExamOptions(EXAM, ['ears']).map((option) => option.id)).toEqual(['ears', 'temperature']);
+    });
+
+    it('осмотр складывает эффекты выбранных действий', () => {
+        expect(getStepResult(EXAM, ['ears', 'temperature']).effects).toEqual({revenue: -100});
+    });
+});
+
+describe('getPatientChart', () => {
+    it('собирает находки и измерения пациента из ответов', () => {
+        const chapter = [
+            {
+                number: 1,
+                activities: [
+                    {code: 'cat', title: 'Приём', patient: {id: 'cat'}, steps: [EXAM]},
+                    {code: 'dog', title: 'Приём', patient: {id: 'dog'}, steps: [{...EXAM}]},
+                ],
+            },
+        ];
+        const state = {...STATE, answers: {cat: {exam: ['ears', 'temperature']}, dog: {exam: ['ears']}}};
+
+        const chart = getPatientChart(chapter, state, 'cat');
+
+        expect(chart.findings.map((finding) => finding.text)).toEqual(['Уши горячие', 'Жар']);
+        expect(chart.readings.temperature.value).toBe('39,9 °C');
     });
 });
