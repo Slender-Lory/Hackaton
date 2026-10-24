@@ -100,6 +100,11 @@ const results = computed(() => [
                     </li>
                 </ul>
             </div>
+            <p class="shift-finale__profession">
+                Такова профессия ветеринара: даже когда делаешь всё правильно, спасти удаётся не всех. К этому нужно
+                быть готовым и не опускать руки. Ветеринар помогает тем, кто не может сказать, где болит, и часто
+                работает не ради денег, а потому что любит своё дело и не может пройти мимо.
+            </p>
         </section>
 
         <p
@@ -184,6 +189,15 @@ const results = computed(() => [
         font-size: $font-size-sm;
         line-height: 1.4;
         gap: $indent-step * 2;
+    }
+
+    &__profession {
+        color: $color-ink-soft;
+        font-size: $font-size-sm;
+        line-height: 1.5;
+        border-top: 1px solid rgba($color-ink, 12%);
+
+        @include padding('top', 3);
     }
 
     &__item-icon {
