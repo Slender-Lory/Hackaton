@@ -130,4 +130,52 @@ describe('usePlayerStore', () => {
 
         expect(store.getPercent('vet')).toBe(50);
     });
+
+    it('сброс аккаунта стирает состояние на сервере, и профессия снова не начата', async () => {
+        playersApi.restoreSession.mockResolvedValue(PROFILE);
+        playersApi.saveProgress.mockResolvedValue({
+            professionCode: 'vet',
+            level: 0,
+            percent: 0,
+            state: null,
+            revision: 4,
+        });
+        const store = usePlayerStore();
+        await store.restore();
+
+        await store.resetProgress('vet');
+
+        expect(playersApi.saveProgress).toHaveBeenCalledWith(
+            'vet',
+            expect.objectContaining({level: 0, percent: 0, state: null, expectedRevision: 3}),
+        );
+        expect(store.getProgressSummary('vet')).toBeNull();
+        expect(store.getProgressState('vet')).toBeNull();
+    });
+
+    it('сброс при конфликте повторяется с ревизией с сервера', async () => {
+        playersApi.restoreSession.mockResolvedValue(PROFILE);
+        playersApi.saveProgress
+            .mockRejectedValueOnce({code: ERROR_CODES.progressConflict})
+            .mockResolvedValueOnce({professionCode: 'vet', level: 0, percent: 0, state: null, revision: 6});
+        playersApi.getProgress.mockResolvedValue({professionCode: 'vet', level: 2, percent: 50, revision: 5});
+        const store = usePlayerStore();
+        await store.restore();
+
+        await store.resetProgress('vet');
+
+        expect(playersApi.saveProgress).toHaveBeenLastCalledWith('vet', expect.objectContaining({expectedRevision: 5}));
+        expect(store.getPercent('vet')).toBeNull();
+    });
+
+    it('гость сбрасывает прогресс в браузере', async () => {
+        const store = usePlayerStore();
+        store.startAsGuest('Аня');
+        await store.saveProgress('vet', {level: 2, percent: 50, state: {version: 1}});
+
+        await store.resetProgress('vet');
+
+        expect(store.getProgressSummary('vet')).toBeNull();
+        expect(store.getProgressState('vet')).toBeNull();
+    });
 });

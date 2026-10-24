@@ -9,6 +9,7 @@ import {usePlayerStore} from '@/core/stores/player';
 import {useToastStore} from '@/core/stores/toast';
 
 import DeleteAccountForm from '@/components/Forms/DeleteAccountForm.vue';
+import ResetProgressForm from '@/components/Forms/ResetProgressForm.vue';
 import PlayerCard from '@/components/Profile/PlayerCard.vue';
 import ProfessionProgressList from '@/components/Profile/ProfessionProgressList.vue';
 import UiButton from '@/components/Ui/UiButton.vue';
@@ -22,6 +23,8 @@ const {account, isAccount, isGuest, isSignedIn, isRestored, nickname} = storeToR
 
 const isDeleteFormOpen = ref(false);
 const isLeaveGuestOpen = ref(false);
+/** @type {import('vue').Ref<import('@/core/types/profession').Profession | null>} */
+const resettingProfession = ref(null);
 
 async function handleLogout() {
     await playerStore.logout();
@@ -33,6 +36,16 @@ function handleLeaveGuest() {
     playerStore.leaveGuest();
     isLeaveGuestOpen.value = false;
     router.push({name: ROUTE_NAMES.professions});
+}
+
+/** @param {import('@/core/types/profession').Profession} profession */
+function handleResetRequest(profession) {
+    resettingProfession.value = profession;
+}
+
+function handleReset() {
+    toastStore.show(`Прогресс «${resettingProfession.value?.title}» сброшен`);
+    resettingProfession.value = null;
 }
 
 function handleDeleted() {
@@ -94,7 +107,7 @@ function handleDeleted() {
                         >
                             Прогресс по профессиям
                         </h2>
-                        <ProfessionProgressList />
+                        <ProfessionProgressList @reset="handleResetRequest" />
                     </section>
 
                     <div class="profile-page__actions">
@@ -173,6 +186,12 @@ function handleDeleted() {
             v-if="isDeleteFormOpen"
             @close="isDeleteFormOpen = false"
             @deleted="handleDeleted"
+        />
+        <ResetProgressForm
+            v-if="resettingProfession"
+            :profession="resettingProfession"
+            @close="resettingProfession = null"
+            @reset="handleReset"
         />
         <UiModal
             v-if="isLeaveGuestOpen"
