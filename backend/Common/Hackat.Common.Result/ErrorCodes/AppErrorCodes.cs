@@ -53,9 +53,11 @@ public enum AppErrorCodes
     [HttpStatus(401)]
     WrongEmailOrPassword = 20000004,
 
-    [Description("Вы уже зарегистрированы")]
-    [HttpStatus(409)]
-    AlreadyRegistered = 20000005,
+    // 20000005 (AlreadyRegistered) больше не используется: гостей на сервере нет.
+
+    [Description("Неверный пароль")]
+    [HttpStatus(403)]
+    WrongPassword = 20000006,
 
     #endregion
 

@@ -35,8 +35,12 @@ public sealed class ApiFixture
         (await client.GetAsync("/health")).EnsureSuccessStatusCode();
     }
 
-    /// <summary>Отдельный экземпляр API над той же БД (своё состояние в памяти, например лимитов запросов).</summary>
-    public static WebApplicationFactory<Program> CreateFactory()
+    /// <summary>
+    /// Отдельный экземпляр API над той же БД (своё состояние в памяти, например лимитов запросов).
+    /// Лимит попыток входа/регистрации по умолчанию поднят — тесты регистрируют много игроков;
+    /// <paramref name="authRateLimitPerMinute"/> задаёт настоящий лимит для тестов самого лимита.
+    /// </summary>
+    public static WebApplicationFactory<Program> CreateFactory(int authRateLimitPerMinute = 100_000)
     {
         var connectionString = _postgres?.GetConnectionString()
             ?? throw new InvalidOperationException("Postgres is not started");
@@ -50,6 +54,7 @@ public sealed class ApiFixture
                 ["ADMIN_LOGIN"] = AdminLogin,
                 ["ADMIN_PASSWORD"] = AdminPassword,
                 ["JWT_SECRET"] = "integration-tests-secret-0123456789abcdef",
+                ["AUTH_RATE_LIMIT_PER_MINUTE"] = authRateLimitPerMinute.ToString(),
             })));
     }
 

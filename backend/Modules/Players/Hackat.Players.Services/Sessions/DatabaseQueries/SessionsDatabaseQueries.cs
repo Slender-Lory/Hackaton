@@ -15,10 +15,9 @@ internal sealed class SessionsDatabaseQueries(PlayersDbContext dc) : ISessionsDa
     public Task<PlayerSession?> GetActive(string tokenHash, DateTimeOffset now) =>
         dc.PlayerSessions
             .AsNoTracking()
-            .Include(u => u.Player)
-            .FirstOrDefaultAsync(u => u.TokenHash == tokenHash && (u.ExpiresAt == null || u.ExpiresAt > now));
+            .FirstOrDefaultAsync(u => u.TokenHash == tokenHash && u.ExpiresAt > now);
 
-    public Task Touch(long sessionId, DateTimeOffset now, DateTimeOffset? expiresAt) =>
+    public Task Touch(long sessionId, DateTimeOffset now, DateTimeOffset expiresAt) =>
         dc.PlayerSessions
             .Where(u => u.Id == sessionId)
             .ExecuteUpdateAsync(s => s

@@ -4,25 +4,23 @@ using Hackat.Players.Services.Sessions;
 
 namespace Hackat.Players.Services.Players;
 
+/// <summary>
+/// Аккаунты игроков. Гостевой режим живёт только на фронте (никнейм и прогресс в localStorage) —
+/// сервер узнаёт о госте, когда тот регистрируется или входит, и забирает его прогресс.
+/// </summary>
 public interface IPlayersService
 {
-    /// <summary>Игра без регистрации: создаёт гостя и его сессию.</summary>
-    Task<AppResult<AuthResultModel>> Enter(EnterForm form);
+    /// <summary>Регистрация по почте и паролю; аккаунт создаётся сразу с прогрессом гостя из браузера.</summary>
+    Task<AppResult<AuthResultModel>> Register(RegisterForm form);
 
-    /// <summary>
-    /// Регистрация по почте. С сессией гостя (<paramref name="current"/>) гость становится аккаунтом
-    /// вместе с прогрессом; без сессии создаётся новый игрок. Выдаётся новая сессия на 30 дней.
-    /// </summary>
-    Task<AppResult<AuthResultModel>> Register(RegisterForm form, SessionInfo? current);
+    /// <summary>Вход по почте и паролю; прогресс гостя переносится в не начатые в аккаунте профессии.</summary>
+    Task<AppResult<AuthResultModel>> Login(LoginForm form);
 
-    /// <summary>
-    /// Вход по почте и паролю. Если запрос пришёл с сессией гостя — его прогресс переносится в аккаунт
-    /// (только не начатые там профессии), а гость удаляется.
-    /// </summary>
-    Task<AppResult<LoginResultModel>> Login(LoginForm form, SessionInfo? current);
-
-    /// <summary>Выход с текущего устройства. Гостю после этого вернуться к своему прогрессу нельзя.</summary>
+    /// <summary>Выход с текущего устройства.</summary>
     Task Logout(SessionInfo current);
+
+    /// <summary>Удаление аккаунта вместе с прогрессом и всеми сессиями. Нужен пароль.</summary>
+    Task<AppResult<bool>> DeleteAccount(Guid playerId, DeleteAccountForm form);
 
     Task<AppResult<PlayerProfileModel>> GetProfile(Guid playerId);
 }

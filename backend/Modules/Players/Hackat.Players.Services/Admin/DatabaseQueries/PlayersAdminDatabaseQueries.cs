@@ -1,4 +1,3 @@
-using Hackat.Players.Contracts.Admin;
 using Hackat.Players.Database.Context;
 using Hackat.Players.Database.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -39,18 +38,11 @@ internal sealed class PlayersAdminDatabaseQueries(PlayersDbContext dc) : IPlayer
     {
         var query = dc.Players.AsNoTracking();
 
-        query = search.Kind switch
-        {
-            PlayerKind.Guests => query.Where(u => u.RegisteredAt == null),
-            PlayerKind.Registered => query.Where(u => u.RegisteredAt != null),
-            _ => query,
-        };
-
         if (search.NicknameKey is { } nickname && search.EmailPart is { } email)
         {
             query = query.Where(u =>
                 u.NormalizedNickname.Contains(nickname)
-                || (u.NormalizedEmail != null && u.NormalizedEmail.Contains(email)));
+                || u.NormalizedEmail.Contains(email));
         }
 
         return query;

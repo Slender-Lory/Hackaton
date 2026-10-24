@@ -2,7 +2,7 @@ namespace Hackat.Players.Database.Entities;
 
 /// <summary>
 /// Сессия на одном устройстве: токен знает только браузер, в БД — его SHA-256.
-/// У гостя сессия бессрочная (другого способа вернуться нет), у аккаунта — скользящие 30 дней.
+/// Живёт 30 дней с последнего использования; «Выйти» удаляет только сессию этого устройства.
 /// </summary>
 public class PlayerSession
 {
@@ -18,6 +18,5 @@ public class PlayerSession
 
     public DateTimeOffset LastUsedAt { get; set; }
 
-    /// <summary>null — не истекает (гость).</summary>
-    public DateTimeOffset? ExpiresAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
 }
