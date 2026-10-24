@@ -1,7 +1,7 @@
 <script setup>
 import {computed, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
-import {ArrowLeft, BookOpen, HeartHandshake, Play, Sparkles, Stethoscope} from 'lucide-vue-next';
+import {ArrowLeft, BookOpen, HeartHandshake, Play, Sparkles, Stethoscope, Wallet} from 'lucide-vue-next';
 import {ROUTE_NAMES} from '@/core/constants';
 import {professionInfo} from '@/core/data/professionInfo';
 import {professions} from '@/core/data/professions';
@@ -10,7 +10,13 @@ import {useStartGame} from '@/composables/useStartGame';
 import NicknameForm from '@/components/Forms/NicknameForm.vue';
 import UiButton from '@/components/Ui/UiButton.vue';
 
-const SECTION_ICONS = Object.freeze({what: Stethoscope, why: HeartHandshake, skills: Sparkles, how: BookOpen});
+const SECTION_ICONS = Object.freeze({
+    what: Stethoscope,
+    why: HeartHandshake,
+    skills: Sparkles,
+    money: Wallet,
+    how: BookOpen,
+});
 
 const route = useRoute();
 const router = useRouter();

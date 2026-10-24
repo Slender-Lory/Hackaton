@@ -1,6 +1,7 @@
 <script setup>
 import {computed} from 'vue';
-import {Play} from 'lucide-vue-next';
+import {useRouter} from 'vue-router';
+import {GraduationCap, Play} from 'lucide-vue-next';
 import {ROUTE_NAMES} from '@/core/constants';
 import {professions} from '@/core/data/professions';
 import {usePlayerStore} from '@/core/stores/player';
@@ -20,6 +21,7 @@ const MAIN_CARD_ORDER = 3;
 
 const emit = defineEmits(['play']);
 
+const router = useRouter();
 const playerStore = usePlayerStore();
 const toastStore = useToastStore();
 
@@ -38,6 +40,10 @@ function getSideStyle(index) {
 /** @param {import('@/core/types/profession').Profession} profession */
 function handleLocked(profession) {
     toastStore.show(`${profession.title} — карта откроется в следующих обновлениях`);
+}
+
+function handleAbout() {
+    router.push({name: ROUTE_NAMES.professionAbout, params: {profession: mainProfession.code}});
 }
 </script>
 
@@ -84,23 +90,30 @@ function handleLocked(profession) {
         </ul>
 
         <div class="professions__actions">
-            <UiButton
-                large
-                @click="emit('play', mainProfession)"
-            >
-                <Play
-                    :size="20"
-                    aria-hidden="true"
-                />
-                {{ mainPercent === null ? 'Начать смену' : 'Продолжить смену' }}
-            </UiButton>
+            <div class="professions__buttons">
+                <UiButton
+                    large
+                    @click="emit('play', mainProfession)"
+                >
+                    <Play
+                        :size="20"
+                        aria-hidden="true"
+                    />
+                    {{ mainPercent === null ? 'Начать смену' : 'Продолжить смену' }}
+                </UiButton>
+                <UiButton
+                    theme="ghost"
+                    large
+                    @click="handleAbout"
+                >
+                    <GraduationCap
+                        :size="20"
+                        aria-hidden="true"
+                    />
+                    Как стать ветеринаром
+                </UiButton>
+            </div>
             <p class="professions__note">Без регистрации, нужно только имя</p>
-            <RouterLink
-                class="professions__about"
-                :to="{name: ROUTE_NAMES.professionAbout, params: {profession: mainProfession.code}}"
-            >
-                Что это за профессия и как ей стать
-            </RouterLink>
         </div>
     </section>
 </template>
@@ -170,14 +183,11 @@ $mobile-card-half: 124px;
         @include column($indent-step * 3);
     }
 
-    &__about {
-        color: $color-on-playmat;
-        font-weight: $font-weight-semibold;
-        text-underline-offset: 3px;
-
-        @include hover {
-            color: $color-action;
-        }
+    &__buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: $indent-step * 3;
     }
 
     &__note {
