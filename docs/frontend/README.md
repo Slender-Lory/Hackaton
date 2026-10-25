@@ -13,9 +13,11 @@ Vue 3 + JavaScript + Vite + Pinia + SCSS (БЭМ). Код — в [`frontend/`](.
 | [standards/testing.md](standards/testing.md)       | Vitest: что и как тестировать                                                                      |
 | [design-system.md](design-system.md)               | Визуальный мир «коллекционные карты», токены, компоненты `Ui*`, тексты, анимации, сторонние ассеты |
 
-Связанные документы: [схема приложения](../app-flow.md), [API backend'а](../api.md), [инструкция для Claude Code](../CLAUDE.md) (временная).
+Связанные документы: [схема приложения](../app-flow.md), [API backend'а](../api.md).
 
 ## Быстрый старт
+
+Описание для защиты: [UX/UI и игровые механики](ux-ui-game-design.md) — основные экраны, игровой цикл и визуальный подход.
 
 ```bash
 cd frontend

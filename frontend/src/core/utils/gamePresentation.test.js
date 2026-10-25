@@ -54,19 +54,22 @@ describe('обращение к игроку', () => {
     });
 });
 
-describe('план смены', () => {
+describe('инструкция к смене', () => {
     it.each(Object.values(DIFFICULTIES))('доступен на сложности %s', (difficulty) => {
         for (const shift of shifts.vet) {
             expect(getShiftGuidance(shift, difficulty).length).toBeGreaterThan(20);
         }
     });
 
-    it('не раскрывает обучающие подсказки на сложном уровне', () => {
+    it('не раскрывает лечебные и диагностические подсказки на любой сложности', () => {
         const shift = {hints: {easy: 'Подробное лечение', normal: 'Диагностический намёк'}};
-        expect(getShiftGuidance(shift, DIFFICULTIES.easy)).toBe('Подробное лечение');
-        expect(getShiftGuidance(shift, DIFFICULTIES.normal)).toBe('Диагностический намёк');
-        expect(getShiftGuidance(shift, DIFFICULTIES.hard)).toContain('плане клиники');
-        expect(getShiftGuidance(shift, DIFFICULTIES.hard)).not.toContain('лечение');
+        for (const difficulty of Object.values(DIFFICULTIES)) {
+            const instruction = getShiftGuidance(shift, difficulty);
+            expect(instruction).toContain('Нажми на подсвеченную комнату');
+            expect(instruction).toContain('начать или продолжить дело');
+            expect(instruction).not.toContain(shift.hints.easy);
+            expect(instruction).not.toContain(shift.hints.normal);
+        }
     });
 });
 
