@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-label="Кем станешь? Ветеринар — мопс Барон и поросёнок">
+
+<style>
+  .patient-art__body, .patient-art__head, .patient-art__tail, .patient-art__ear, .patient-art__eyes { transform-box: fill-box; }
+  .patient-art__body { transform-origin: center bottom; animation: breathe 3.2s ease-in-out infinite; }
+  .patient-art__head { transform-origin: 70% 90%; animation: nod 3.2s ease-in-out infinite; }
+  .patient-art__tail { transform-origin: left bottom; animation: wag .7s ease-in-out infinite alternate; }
+  .pig .patient-art__tail { transform-origin: left center; }
+  .patient-art__ear { transform-origin: right top; animation: ear 6s ease-in-out infinite; }
+  .patient-art__ear--back { transform-origin: left top; animation-delay: 1.4s; }
+  .patient-art__eyes { transform-origin: center; animation: blink 4.6s ease-in-out infinite; }
+  .patient-art__shadow { fill: rgba(23,59,58,.14); }
+  .hop { animation: hop 2.4s ease-in-out infinite; }
+  .hop--late { animation-delay: .6s; }
+  .heart { animation: float 4s ease-in infinite; opacity: 0; }
+  .heart--2 { animation-delay: 1.3s; } .heart--3 { animation-delay: 2.6s; }
+  .card { animation: tilt 6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes breathe { 50% { transform: scale(1.02, 1.04); } }
+  @keyframes nod { 50% { transform: rotate(-2deg); } }
+  @keyframes wag { from { transform: rotate(-10deg); } to { transform: rotate(10deg); } }
+  @keyframes ear { 0%, 88%, 100% { transform: rotate(0); } 92% { transform: rotate(-12deg); } 96% { transform: rotate(6deg); } }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+  @keyframes hop { 0%, 60%, 100% { transform: translateY(0); } 75% { transform: translateY(-14px); } }
+  @keyframes float { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-120px) scale(1.1); opacity: 0; } }
+  @keyframes tilt { 50% { transform: rotate(-2deg) translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .heart { opacity: 0; } }
+</style>
+
+<rect width="1200" height="360" rx="28" fill="#2c7f79"/>
+<path d="M0 60 H1200 M0 140 H1200 M0 220 H1200 M0 300 H1200 M150 0 V360 M300 0 V360 M450 0 V360 M600 0 V360 M750 0 V360 M900 0 V360 M1050 0 V360" stroke="#c6ece6" stroke-opacity=".18"/>
+<text x="70" y="128" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="600" fill="#d3f0eb">Браузерная игра о профессии</text>
+<text x="70" y="200" font-family="'Arial Black', 'Segoe UI', Arial, sans-serif" font-size="66" font-weight="900" fill="#ffffff">Кем станешь?</text>
+<text x="70" y="262" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="600" fill="#ffd36b">Ветеринар · три смены · одна ферма</text>
+<g transform="translate(610 60)">
+  <g class="card"><rect width="250" height="250" rx="24" fill="#fbfefd"/><rect x="14" y="14" width="222" height="222" rx="16" fill="#e9f6f3"/></g>
+  <g class="hop"><svg x="14" y="40" width="222" height="171" viewBox="0 0 260 200"><ellipse class="patient-art__shadow" cx="138" cy="190" rx="96" ry="8" /> <g class="patient-art__tail"> <circle cx="216" cy="84" r="21" fill="#f0d3ae" /> <circle cx="216" cy="84" r="9" fill="#e2bd92" /> </g> <rect x="172" y="128" width="28" height="54" rx="13" fill="#e7c49c" /> <ellipse cx="186" cy="181" rx="17" ry="9" fill="#7a5a4c" /> <g class="patient-art__body"> <ellipse cx="152" cy="120" rx="72" ry="48" fill="#f0d3ae" /> <ellipse cx="176" cy="104" rx="22" ry="30" fill="#f6e2c6" transform="rotate(-20 176 104)" /> </g> <rect x="96" y="132" width="28" height="52" rx="13" fill="#f0d3ae" /> <rect x="132" y="136" width="28" height="48" rx="13" fill="#e7c49c" /> <ellipse cx="110" cy="184" rx="17" ry="9" fill="#7a5a4c" /> <ellipse cx="146" cy="184" rx="17" ry="9" fill="#7a5a4c" /> <g class="patient-art__head"> <path class="patient-art__ear patient-art__ear--back" d="M128 42 C150 26 178 40 172 64 C168 78 150 72 142 62 Z" fill="#7a5a4c" /> <circle cx="96" cy="86" r="56" fill="#f0d3ae" /> <path d="M80 46 q16 -8 32 0 M70 60 q12 -6 22 -2 M106 58 q12 -4 22 2" stroke="#e2bd92" stroke-width="6" stroke-linecap="round" fill="none" /> <path class="patient-art__ear" d="M58 46 C34 40 20 62 30 86 C36 98 50 92 56 78 Z" fill="#7a5a4c" /> <ellipse cx="70" cy="90" rx="15" ry="13" fill="#8a6a5a" /> <ellipse cx="122" cy="80" rx="15" ry="13" fill="#8a6a5a" /> <g class="patient-art__eyes"> <circle cx="72" cy="90" r="5" fill="#1f1a18" /> <circle cx="120" cy="80" r="5" fill="#1f1a18" /> </g> <ellipse cx="98" cy="112" rx="34" ry="27" fill="#7a5a4c" /> <ellipse cx="96" cy="100" rx="12" ry="8" fill="#4e3a32" /> <path d="M80 116 q16 12 34 0" stroke="#4e3a32" stroke-width="3" stroke-linecap="round" fill="none" /> <ellipse class="patient-art__tongue" cx="98" cy="124" rx="8" ry="10" fill="#f0a3a0" /> <circle cx="56" cy="104" r="7" fill="#f5b8b0" /> <circle cx="134" cy="96" r="7" fill="#f5b8b0" /> </g></svg></g>
+</g>
+<g transform="translate(890 60)">
+  <g class="card"><rect width="250" height="250" rx="24" fill="#fbfefd"/><rect x="14" y="14" width="222" height="222" rx="16" fill="#e9f6f3"/></g>
+  <g class="hop hop--late pig"><svg x="14" y="40" width="222" height="171" viewBox="0 0 260 200"><ellipse class="patient-art__shadow" cx="138" cy="190" rx="98" ry="8" /> <path class="patient-art__tail" d="M222 104 c16 -4 20 -22 8 -26 c-10 -3 -12 12 -2 12 c10 0 14 -10 14 -10" stroke="#e89b95" stroke-width="6" stroke-linecap="round" fill="none" /> <rect x="176" y="130" width="28" height="52" rx="13" fill="#eaa69e" /> <path d="M176 172 h28 v8 a10 10 0 0 1 -10 10 h-8 a10 10 0 0 1 -10 -10 Z" fill="#9a5c5a" /> <g class="patient-art__body"> <ellipse cx="154" cy="120" rx="76" ry="50" fill="#f2b3ab" /> <ellipse cx="182" cy="102" rx="22" ry="30" fill="#f6c6bf" transform="rotate(-20 182 102)" /> </g> <g> <rect x="100" y="132" width="28" height="52" rx="13" fill="#f2b3ab" /> <path d="M100 174 h28 v8 a10 10 0 0 1 -10 10 h-8 a10 10 0 0 1 -10 -10 Z" fill="#9a5c5a" /> </g> <rect x="138" y="136" width="28" height="48" rx="13" fill="#eaa69e" /> <path d="M138 174 h28 v8 a10 10 0 0 1 -10 10 h-8 a10 10 0 0 1 -10 -10 Z" fill="#9a5c5a" /> <g class="patient-art__head"> <path class="patient-art__ear patient-art__ear--back" d="M120 50 C142 22 182 30 180 56 C178 72 150 70 136 66 Z" fill="#e89b95" /> <circle cx="96" cy="92" r="54" fill="#f2b3ab" /> <ellipse cx="112" cy="60" rx="18" ry="12" fill="#f6c6bf" /> <path class="patient-art__ear" d="M62 52 C36 30 8 44 14 72 C18 86 40 84 54 74 Z" fill="#e89b95" /> <g class="patient-art__eyes"> <circle cx="76" cy="88" r="5" fill="#1f1a18" /> <circle cx="118" cy="80" r="5" fill="#1f1a18" /> </g> <ellipse cx="96" cy="110" rx="26" ry="19" fill="#e8958f" transform="rotate(-10 96 110)" /> <ellipse cx="88" cy="112" rx="4" ry="7" fill="#c06f6f" /> <ellipse cx="104" cy="108" rx="4" ry="7" fill="#c06f6f" /> <circle cx="62" cy="104" r="7" fill="#f19c9a" /> <circle cx="132" cy="94" r="7" fill="#f19c9a" /> </g></svg></g>
+</g>
+<g transform="translate(870 330)"><g class="heart"><path d="M0 -6 C-6 -14 -18 -8 -12 2 L0 12 L12 2 C18 -8 6 -14 0 -6Z" fill="#f08a7a"/></g></g>
+<g transform="translate(1150 300)"><g class="heart heart--2"><path d="M0 -6 C-6 -14 -18 -8 -12 2 L0 12 L12 2 C18 -8 6 -14 0 -6Z" fill="#f08a7a"/></g></g>
+<g transform="translate(640 320)"><g class="heart heart--3"><path d="M0 -6 C-6 -14 -18 -8 -12 2 L0 12 L12 2 C18 -8 6 -14 0 -6Z" fill="#f08a7a"/></g></g>
+</svg>
