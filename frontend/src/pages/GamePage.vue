@@ -60,7 +60,7 @@ const isResetFormOpen = ref(false);
 const isPassportOpen = ref(false);
 const activeStep = ref(null);
 const hasPatient = computed(() => activeActivity.value?.kind !== 'triage' && isPatientPresent(activeStep.value));
-const guidance = computed(() => getShiftGuidance(shift.value, state.value?.difficulty));
+const guidance = getShiftGuidance();
 
 const profession = computed(() => professions.find((item) => item.code === professionCode.value));
 const nextActivity = computed(() =>
@@ -209,14 +209,14 @@ function handleReset() {
                         />
                         <aside
                             class="game-page__note"
-                            aria-labelledby="shift-plan-title"
+                            aria-labelledby="shift-instructions-title"
                         >
                             <ClipboardList
                                 :size="26"
                                 aria-hidden="true"
                             />
                             <div>
-                                <h2 id="shift-plan-title">План смены</h2>
+                                <h2 id="shift-instructions-title">Инструкция</h2>
                                 <p>{{ guidance }}</p>
                             </div>
                         </aside>

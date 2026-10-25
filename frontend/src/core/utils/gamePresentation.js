@@ -1,4 +1,3 @@
-import {getHint} from '@/core/utils/shift';
 import {clinicRooms} from '@/core/data/clinic';
 
 export function getNextActivity(activities, statuses, openRoomCodes) {
@@ -19,11 +18,8 @@ export function isPatientPresent(step) {
     return Boolean(step) && step.patientPresent !== false;
 }
 
-export function getShiftGuidance(shift, difficulty) {
-    return (
-        getHint(shift?.hints, difficulty) ??
-        'Выбери доступное дело на плане клиники. Подсвеченные комнаты открыты, закрытые станут доступны по ходу смены.'
-    );
+export function getShiftGuidance() {
+    return 'Нажми на подсвеченную комнату, чтобы начать или продолжить дело.';
 }
 
 export function getPassportPrompt(step) {
