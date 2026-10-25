@@ -25,7 +25,7 @@ npm install
 npm run dev      # http://localhost:5173, /api проксируется на http://localhost:8080
 ```
 
-Backend и база — в корневом [README](../../README.md).
+Backend и база — в [docs/development.md](../development.md).
 
 ## Перед коммитом
 
