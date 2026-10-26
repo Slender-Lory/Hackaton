@@ -8,6 +8,7 @@ export default defineConfig(({mode}) => {
     const env = loadEnv(mode, '.', '');
 
     return {
+        base: env.VITE_BASE ?? '/',
         plugins: [vue(), tailwindcss()],
         resolve: {
             alias: {'@': fileURLToPath(new URL('./src', import.meta.url))},

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 200" role="img" aria-label="Поросёнок">
+<style>
+  .patient-art__body, .patient-art__head, .patient-art__tail, .patient-art__ear, .patient-art__eyes { transform-box: fill-box; }
+  .patient-art__body { transform-origin: center bottom; animation: breathe 3.2s ease-in-out infinite; }
+  .patient-art__head { transform-origin: 70% 90%; animation: nod 3.2s ease-in-out infinite; }
+  .patient-art__tail { transform-origin: left bottom; animation: wag .7s ease-in-out infinite alternate; }
+  .pig .patient-art__tail { transform-origin: left center; }
+  .patient-art__ear { transform-origin: right top; animation: ear 6s ease-in-out infinite; }
+  .patient-art__ear--back { transform-origin: left top; animation-delay: 1.4s; }
+  .patient-art__eyes { transform-origin: center; animation: blink 4.6s ease-in-out infinite; }
+  .patient-art__shadow { fill: rgba(23,59,58,.14); }
+  .hop { animation: hop 2.4s ease-in-out infinite; }
+  .hop--late { animation-delay: .6s; }
+  .heart { animation: float 4s ease-in infinite; opacity: 0; }
+  .heart--2 { animation-delay: 1.3s; } .heart--3 { animation-delay: 2.6s; }
+  .card { animation: tilt 6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes breathe { 50% { transform: scale(1.02, 1.04); } }
+  @keyframes nod { 50% { transform: rotate(-2deg); } }
+  @keyframes wag { from { transform: rotate(-10deg); } to { transform: rotate(10deg); } }
+  @keyframes ear { 0%, 88%, 100% { transform: rotate(0); } 92% { transform: rotate(-12deg); } 96% { transform: rotate(6deg); } }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+  @keyframes hop { 0%, 60%, 100% { transform: translateY(0); } 75% { transform: translateY(-14px); } }
+  @keyframes float { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-120px) scale(1.1); opacity: 0; } }
+  @keyframes tilt { 50% { transform: rotate(-2deg) translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .heart { opacity: 0; } }
+</style>
+<g class="pig"><ellipse class="patient-art__shadow" cx="138" cy="190" rx="98" ry="8" /> <path class="patient-art__tail" d="M222 104 c16 -4 20 -22 8 -26 c-10 -3 -12 12 -2 12 c10 0 14 -10 14 -10" stroke="#e89b95" stroke-width="6" stroke-linecap="round" fill="none" /> <rect x="176" y="130" width="28" height="52" rx="13" fill="#eaa69e" /> <path d="M176 172 h28 v8 a10 10 0 0 1 -10 10 h-8 a10 10 0 0 1 -10 -10 Z" fill="#9a5c5a" /> <g class="patient-art__body"> <ellipse cx="154" cy="120" rx="76" ry="50" fill="#f2b3ab" /> <ellipse cx="182" cy="102" rx="22" ry="30" fill="#f6c6bf" transform="rotate(-20 182 102)" /> </g> <g> <rect x="100" y="132" width="28" height="52" rx="13" fill="#f2b3ab" /> <path d="M100 174 h28 v8 a10 10 0 0 1 -10 10 h-8 a10 10 0 0 1 -10 -10 Z" fill="#9a5c5a" /> </g> <rect x="138" y="136" width="28" height="48" rx="13" fill="#eaa69e" /> <path d="M138 174 h28 v8 a10 10 0 0 1 -10 10 h-8 a10 10 0 0 1 -10 -10 Z" fill="#9a5c5a" /> <g class="patient-art__head"> <path class="patient-art__ear patient-art__ear--back" d="M120 50 C142 22 182 30 180 56 C178 72 150 70 136 66 Z" fill="#e89b95" /> <circle cx="96" cy="92" r="54" fill="#f2b3ab" /> <ellipse cx="112" cy="60" rx="18" ry="12" fill="#f6c6bf" /> <path class="patient-art__ear" d="M62 52 C36 30 8 44 14 72 C18 86 40 84 54 74 Z" fill="#e89b95" /> <g class="patient-art__eyes"> <circle cx="76" cy="88" r="5" fill="#1f1a18" /> <circle cx="118" cy="80" r="5" fill="#1f1a18" /> </g> <ellipse cx="96" cy="110" rx="26" ry="19" fill="#e8958f" transform="rotate(-10 96 110)" /> <ellipse cx="88" cy="112" rx="4" ry="7" fill="#c06f6f" /> <ellipse cx="104" cy="108" rx="4" ry="7" fill="#c06f6f" /> <circle cx="62" cy="104" r="7" fill="#f19c9a" /> <circle cx="132" cy="94" r="7" fill="#f19c9a" /> </g></g></svg>

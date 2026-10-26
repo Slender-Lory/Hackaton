@@ -4,7 +4,7 @@ import {ROUTE_NAMES} from '@/core/constants';
 import ProfessionsPage from '@/pages/ProfessionsPage.vue';
 
 export const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHistory(import.meta.env.BASE_URL),
     scrollBehavior(to, from, savedPosition) {
         return savedPosition ?? {top: 0};
     },
