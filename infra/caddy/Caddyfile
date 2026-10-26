@@ -1,0 +1,6 @@
+# HTTPS-вход для сервера: Caddy сам получает сертификат Let's Encrypt для SITE_DOMAIN
+# и проксирует всё на nginx фронтенда (он же отдаёт /api backend'у).
+{$SITE_DOMAIN} {
+    encode gzip
+    reverse_proxy frontend:80
+}

@@ -76,5 +76,24 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  # HTTPS для сервера. Включается профилем: COMPOSE_PROFILES=https и SITE_DOMAIN в .env
+  caddy:
+    image: caddy:2
+    profiles: ["https"]
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

@@ -61,6 +61,21 @@ make down
 ./infra/deploy/deploy.sh config    # показать итоговую конфигурацию (dry-run)
 ```
 
+### HTTPS и GitHub Pages
+
+Версия на GitHub Pages (https://slender-lory.github.io/Hackaton/) обращается к API сервера по адресу `https://217-144-184-154.sslip.io/api`. Чтобы это работало, на сервере нужен HTTPS: браузер не пускает запросы со страницы https на http.
+
+1. Откройте на сервере порты 80 и 443.
+2. Добавьте в `.env` на сервере:
+
+```bash
+COMPOSE_PROFILES=https
+SITE_DOMAIN=217-144-184-154.sslip.io
+CORS_ORIGIN=http://217.144.184.154:5173,https://217-144-184-154.sslip.io,https://slender-lory.github.io
+```
+
+3. Перезапустите стек. Caddy сам получит сертификат Let's Encrypt, и игра откроется по https://217-144-184-154.sslip.io.
+
 ## Все команды
 
 | Команда | Что делает |
